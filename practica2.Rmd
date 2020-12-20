@@ -1,0 +1,619 @@
+---
+title: "Pràctica 2"
+author: "Pol Moya Betriu i Xavier Martin Bravo"
+date: '`r format(Sys.Date(),"%e de %B, %Y")`'
+output:
+  pdf_document:
+    toc: yes
+    number_sections: true
+  html_document:
+    toc: yes
+    number_sections: true
+toc-title: "Índex"
+bibliography: scholar.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, include=FALSE}
+library(knitr)
+```
+
+\newpage
+# Descripció del dataset
+
+Després de valorar diversos jocs de dades que semblaven interessants i valorar que aquests eren aptes per a la realització de la pràctica, ens hem decantat per un sobre persones que han sofert infarts. Aquest joc de dades té vàries característiques que fan que pugui ser un bon model per a aplicar algoritmes supervisats, algoritmes no supervisats i regles d'associació.
+
+Les malalties cardiovasculars són la principal causa de mort globalment (fins al 30%), moren aproximadament 17.9 milions de persones cada any. L'atac de cor és una de les principals conseqüències, causades per les malalties cardiovasculars, aquest joc de dades conté 12 atributs que es poden utilitzar per a predir la mortalitat dels atacs de cor. [@cvd]
+
+La majoria dels atacs de cor es poden prevenir millorant certs hàbits, com per exemple fumar, una mala dieta, l'obesitat, el sedentarisme i l'alcoholisme.
+
+L'objectiu del joc de dades és intentar predir si persones de risc, han mort o no d'un atac de cor en un període determinat de temps en els quals estan en seguiment. D'aquesta manera una detecció precoç i una bona gestió d'un posible atac de cor, poden salvar moltes de les vides d'aquestes persones amb un risc més alt.
+
+
+Descripció de les variables contingudes al joc de dades:
+
+* **age:** integer que descriu edat del pacient (anys).
+* **anaemia:** factor que especifica si el pacient pateix anèmia o no.
+* **creatinine_phosphokinase:** integer que representa el nivell de *CPK* en la sang en (*mcg/L*).
+* **diabetes:** factor que indica si el pacient és diabètic o no.
+* **ejection_fraction :** integer que descriu el percentatge de sang que surt del cor en cada contracció en (%).
+* **high_blood_pressure:** factor que indica si el pacient té hipertensió o no.
+* **platelets:** numeric que representa el nombre de plaquetes en sang del pacient (kiloplatelets/mL).
+* **serum_creatinine:** numeric que representa el nivell de creatinina en la sang (mg/dL).
+* **serum_sodium:** integer que indica el nivell de sodi en sang (mEq/L).
+* **sex:** factor que indica si el sexe del pacient és masculí o femení.
+* **smoking:** factor que indica si el pacient fuma o no.
+* **time:** integer període de seguiment en dies.
+* **DEATH_EVENT:** factor que indica si el pacient ha mort o no durant el període de seguiment.
+
+
+
+# Integració i selecció de les dades d’interès a analitzar. 
+
+
+Un cop hem vist els atributs del joc dades, determinem que tots són d'interès perquè no sabem quins atributs influeixen a l'hora de predir si una persona es morirà o no d'un atac de cor. Per tant de moment utilitzarem tots els atributs inclosos en el joc de dades i més endavant ja conclourem si tots són significatius o realment hi ha algun atribut que és prescindible per aquesta anàlisi.
+
+# Neteja de les dades.
+
+Carreguem el joc de dades i comprovem que aquest s'ha llegit de forma correcta:
+
+```{r message= FALSE, warning=FALSE}
+heart_data<-read.csv("./heart_failure_clinical_records_dataset.csv", header=T, sep=",")
+#Comprovem que s'ha llegit correctament
+head(heart_data)
+#Comprovem que la dimensió és la correcta
+dim(heart_data)
+```
+
+## Anàlisi exploratòria del joc de dades
+
+```{r message= FALSE, warning=FALSE}
+#Visualitzem els tipus de les variables
+str(heart_data)
+```
+
+Observem que tenim variables que no estan en el format que haurien d'estar. Per tant, abans de continuar amb l'anàlisi exploratòria, transformarem les binaries i booleanes a categòriques per tal de visualitzar millor com estan distribuïdes les dades. Ens guardarem una còpia del joc de dades per a poder recuperar la transfromació, ja que la majoria d'eines i models per analitzar dades només accepten números com a valors de les variables.
+
+```{r message= FALSE, warning=FALSE}
+#Realizem una còpia
+heart_data1 <- heart_data
+#anaemia
+i <- heart_data$anaemia == '1'
+heart_data$anaemia[i] <- "Si"
+i <- heart_data$anaemia == '0'
+heart_data$anaemia[i] <- "No"
+heart_data$anaemia <- as.factor(heart_data$anaemia)
+#diabetes
+i <- heart_data$diabetes == '1'
+heart_data$diabetes[i] <- "Si"
+i <- heart_data$diabetes == '0'
+heart_data$diabetes[i] <- "No"
+heart_data$diabetes <- as.factor(heart_data$diabetes)
+#high_blood_pressure
+i <- heart_data$high_blood_pressure == '1'
+heart_data$high_blood_pressure[i] <- "Si"
+i <- heart_data$high_blood_pressure == '0'
+heart_data$high_blood_pressure[i] <- "No"
+heart_data$high_blood_pressure <- as.factor(heart_data$high_blood_pressure)
+#sex
+i <- heart_data$sex == '0'
+heart_data$sex[i] <- "femeni"
+i <- heart_data$sex == '1'
+heart_data$sex[i] <- "masculi"
+heart_data$sex <- as.factor(heart_data$sex)
+#smoking
+i <- heart_data$smoking == '1'
+heart_data$smoking[i] <- "Si"
+i <- heart_data$smoking == '0'
+heart_data$smoking[i] <- "No"
+heart_data$smoking <- as.factor(heart_data$smoking)
+#DEATH_EVENT
+i <- heart_data$DEATH_EVENT == '1'
+heart_data$DEATH_EVENT[i] <- "Si"
+i <- heart_data$DEATH_EVENT == '0'
+heart_data$DEATH_EVENT[i] <- "No"
+heart_data$DEATH_EVENT <- as.factor(heart_data$DEATH_EVENT)
+#Observem les transformacions
+str(heart_data)
+```
+
+
+
+A continuació visualitzarem una descriptiva de les variables amb la funció *summary* (resum) de les dades on s'aprecia la transformació de les variables categòriques per tal de poder realitzar una millor anàlisi exploratòria:
+
+```{r message= FALSE, warning=FALSE}
+#Resum de les dades
+summary(heart_data)
+```
+
+
+## Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
+
+
+A continuació estudiarem i tractarem els valors buits (*NA*):
+
+```{r message= FALSE, warning=FALSE}
+#Estudiem els valors buits
+colSums(is.na(heart_data))
+```
+
+Com podem observar, no hi ha valors buits al joc de dades per tant podem seguir endavant. 
+
+## Identificació i tractament de valors extrems.
+
+
+Visualitzarem els valors extrems o *outliers* amb un boxplot per cada variable numèrica.
+
+```{r message= FALSE, warning=FALSE}
+#Estudiem els outliers
+attach(heart_data)
+par(mfrow=c(1,2))
+boxplot(age,main="Age", col="gray")
+boxplot(creatinine_phosphokinase,main="Creatinine_phosphokinase", col="gray")
+boxplot(ejection_fraction,main="Ejection_fraction", col="gray")
+boxplot(platelets,main="Platelets", col="gray")
+boxplot(serum_creatinine,main="Serum_creatinine", col="gray")
+boxplot(serum_sodium,main="Serum_sodium", col="gray")
+boxplot(time,main="Time", col="gray")
+```
+
+Podem veure que totes les variables menys age i time tenen outliers. A continuació observarem quins són aquests per a cada variable.
+
+```{r message= FALSE, warning=FALSE}
+#Visualitzem els outliers
+#creatinine_phosphokinase
+summary(heart_data$creatinine_phosphokinase)
+boxplot.stats(heart_data$creatinine_phosphokinase)$out
+#ejection_fraction
+summary(heart_data$ejection_fraction)
+boxplot.stats(heart_data$ejection_fraction)$out
+#platelets
+summary(heart_data$platelets)
+boxplot.stats(heart_data$platelets)$out
+#serum_creatinine
+summary(heart_data$serum_creatinine)
+boxplot.stats(heart_data$serum_creatinine)$out
+#serum_sodium
+summary(heart_data$serum_sodium)
+boxplot.stats(heart_data$serum_sodium)$out
+```
+
+* *creatinine_phosphokinase*: observem que tenim bastanta quantitat de posibles outliers pel costat dret de la distribució i aquests separen molt de la mediana i la mitjana.
+* *ejection_fraction*: només tenim 2 outliers i no són excessivament grans.
+* *platelets*: en aquesta variable també tenim una gran quantitat d'outliers i n'hi ha pels dos costats de la distribució.
+* *serum_creatinine*: tenim outliers que es separen molt de les variables centrals, per exemple la mediana és 1.1 i teni mun màxim de 9.4.
+* *serum_sodium*: en aquesta variable només tenim 4 outliers i proporcionalment no s'allunyen tant com en la variable *serum_creatinine*.
+
+Després de visualitzar els possibles *outliers* que presenta el nostre joc de dades, s'ha decidit no excloure'ls perquè molt probablement representen dades reals que després ens ajudaran a veure quan i perquè una persona és mor en un període de temps posterior a patir un infart.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Variables categòriques
+
+Visualitzarem i analitzarem les distribucions de les variables categòriques:
+
+```{r message= FALSE, warning=FALSE}
+attach(heart_data)
+par(mfrow=c(2,3))
+barplot(table(anaemia), main = "Anaemia", ylab='Freqüència')
+barplot(table(diabetes), main = "Diabetes", ylab='Freqüència')
+barplot(table(high_blood_pressure), main = "High_blood_pressure", ylab='Freqüència')
+barplot(table(sex), main = "Sex", ylab='Freqüència')
+barplot(table(smoking), main = "Smoking", ylab='Freqüència')
+barplot(table(DEATH_EVENT), main = "DEATH_EVENT", ylab='Freqüència')
+```
+
+Podem observar que tenim: 
+
+* **anaemia:** observem que tenim més pacients no anèmics (170) que pacients anèmics (129).
+* **diabetes:** hi ha menys pacients diabètics  (125) que no diabètics  (174).
+* **high_blood_pressure:** hi ha menys pacients amb hipertensió que pacients que no en tenen, 105 i 194 respectivament.
+* **sex:** en el joc de dades hi ha més persones amb sexe masculí (194) a femení (105).
+* **smoking:**hi ha més persones no fumadores (203) que fumadores (96).
+* **DEATH_EVENT:** hi ha més persones que sobreviuen que persones que moren en el període de seguiment 203 i 96 respectivament.
+
+### Variables numèriques
+
+Un cop vistes les distribucions categòriques, passarem a analitzar les distribucions de les variables numèriques.
+
+#### Age
+
+```{r message= FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(heart_data, aes(x = age)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Edat dels pacients")
+```
+
+Veiem que la distribució, no sembla que segueixi una distribució normal perquè tenim molts alts i baixos, tot i que sí que té forma de campana de Gauss. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat. Tant per aquesta variable, com les següents, assumirem un nivell de confiança del 95%. Per tant $\alpha = 0.05$.
+
+$H_{0}:$ La variable *age* segueix una distribució normal.
+
+$H_{1}:$ La variable *age* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$age);qqline(heart_data$age, col = 2)
+```
+
+Doncs visualment sembla que la variable *age* sí que segueix una distribució normal. Però per a verificar-ho realitzarem un test d'hipòtesis. Primer mirem la mida de la mostra, com aquesta és superior a 50, hauríem d'aplicar el test de *Kolmogorov-Smirnov*. Però com desconeixem la $\mu$ i $\sigma$ poblacionals, s'ha d'utilitzar el test de *Lilliefors* [@analisisNorm].
+
+```{r message= FALSE, warning=FALSE}
+#Test de Lilliefors
+library("nortest")
+lillie.test(heart_data$age)
+```
+
+El test de Lilliefors ens dóna que el p-valor = 0.001304. Perquè  segueixi normalitat amb un nivell de confiança del 95%, el p-valor ha de ser superior a 0.05. Com 0.001304 < 0.05. Rebutgem la $H_{0}$ i diem que la variable *age* no segueix una distribució normal.
+
+
+#### creatinine_phosphokinase
+
+```{r message= FALSE, warning=FALSE}
+ggplot(heart_data, aes(x = creatinine_phosphokinase)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Creatinine_phosphokinase en mcg/L")
+```
+
+No sembla que segueixi una distribució normal. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
+
+$H_{0}:$ La variable *creatinine_phosphokinase* segueix una distribució normal.
+
+$H_{1}:$ La variable *creatinine_phosphokinase* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$creatinine_phosphokinase);qqline(heart_data$creatinine_phosphokinase, col = 2)
+```
+
+Veiem que s'allunya molt de com hauria de ser una distribució normal, de totes maneres ho comprobarem amb el test de *Lilliefors*.
+
+```{r message= FALSE, warning=FALSE}
+#Test de Lilliefors
+lillie.test(heart_data$creatinine_phosphokinase)
+```
+
+Efectivament, el p-valor és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *creatinine_phosphokinase* no segueix una distribució normal.  
+
+#### Ejection_fraction
+
+```{r message= FALSE, warning=FALSE}
+breaks <- pretty(range(heart_data$ejection_fraction), n = nclass.FD(heart_data$ejection_fraction), min.n = 1)
+bwidth <- breaks[2]-breaks[1]
+ggplot(heart_data, aes(x = ejection_fraction)) + geom_histogram(binwidth=bwidth,fill="white",colour="black") + ylab("Freqüència") + xlab("Ejection_fraction en %")
+```
+
+L'inici del gràfic si que sembla que segueix una distribució normal però a partir de la mediana sembla que no, per tant com en els apartats anteriors realitzarem un test per sortir de dubtes. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
+
+$H_{0}:$ La variable *ejection_fraction* segueix una distribució normal.
+
+$H_{1}:$ La variable *ejection_fraction* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$ejection_fraction);qqline(heart_data$ejection_fraction, col = 2)
+```
+
+Veiem que les mostres més o menys van seguint la linea que representa una distribució normal. A continuació realitzarem el test de *Lilliefors* per acabar de verificar-ho.
+
+```{r message= FALSE, warning=FALSE}
+#Test de Lilliefors
+lillie.test(heart_data$ejection_fraction)
+```
+
+Doncs el p-valor és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *ejection_fraction* no segueix una distribució normal.
+
+#### Platelets
+
+```{r message= FALSE, warning=FALSE}
+ggplot(heart_data, aes(x = platelets)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Platelets en kiloplatelets/m")
+```
+
+La distribució de la variable *platelets* succeeix igual que en l'apartat anterior, no sembla que segueixi una distribució normal. A continuació ho verificarem definint les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
+
+$H_{0}:$ La variable *platelets* segueix una distribució normal.
+
+$H_{1}:$ La variable *platelets* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$platelets);qqline(heart_data$platelets, col = 2)
+```
+
+Veiem que les dades segueixen la línia que representa la distribució normal fins al quantil numero 1, a partir d'allà es desvia. Realitzarem el test de *Lilliefors* per acabar de verificar-ho.
+
+```{r message= FALSE, warning=FALSE}
+#Test de Lilliefors
+lillie.test(heart_data$platelets)
+```
+
+
+Doncs el p-valor (1.904e-10) és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *platelets* no segueix una distribució normal.
+
+
+#### Serum_creatinine
+
+```{r message= FALSE, warning=FALSE}
+ggplot(heart_data, aes(x = serum_creatinine)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Serum_creatinine en mg/dLL")
+```
+
+Observem clarament com la variable *serum_creatinine* no té forma de Campana de Gauss i no segueix una distribució normal. De totes maneres ens n'assegurarem definint les hipòtesis nul·la i alternativa i avaluant si compleix l'assumpció de normalitat.
+
+$H_{0}:$ La variable *serum_creatinine* segueix una distribució normal.
+
+$H_{1}:$ La variable *serum_creatinine* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$serum_creatinine);qqline(heart_data$serum_creatinine, col = 2)
+```
+
+Veiem que com en la variable *platelets*, les dades segueixen la línia que representa la distribució normal fins al quantil numero 1, a partir d'allà es desvia. Realitzarem el test de *Lilliefors* per acabar de verificar-ho.
+
+```{r message= FALSE, warning=FALSE}
+#Test de Lilliefors
+lillie.test(heart_data$serum_creatinine)
+```
+
+
+Efectivament el p-valor (2.2e-16) és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *serum_creatinine* no segueix una distribució normal.
+
+
+#### Serum_sodium
+
+```{r message= FALSE, warning=FALSE}
+ggplot(heart_data, aes(x = serum_sodium)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Serum_sodium en mEq/L")
+```
+
+La distribució de la variable *serum_sodium* podria ser normal, per això ho comprovarem definint les hipòtesis nul·la i alternativa i avaluant si compleix l'assumpció de normalitat.
+
+$H_{0}:$ La variable *serum_sodium* segueix una distribució normal.
+
+$H_{1}:$ La variable *serum_sodium* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$serum_sodium);qqline(heart_data$serum_sodium, col = 2)
+```
+
+Observem que les dades segueixen bastant la línia que representa la distribució normal. A continuació realitzarem el test de *Lilliefors* per assegurar-nos si realment *serum_sodium* segueix una distribució normal amb un nivell de confiança del 95%.
+
+```{r message= FALSE, warning=FALSE}
+#Test de Lilliefors
+lillie.test(heart_data$serum_sodium)
+```
+
+
+Doncs el p-valor = 8.683e-10, per tant com aquest és més petit que 0.05, rebutgem la $H_0$ i diem que la variable *serum_sodium* no segueix una distribució normal.
+
+#### Time
+
+```{r message= FALSE, warning=FALSE}
+breaks <- pretty(range(heart_data$time), n = nclass.FD(heart_data$time), min.n = 1)
+bwidth <- breaks[2]-breaks[1]
+ggplot(heart_data, aes(x = time)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Time en dies")
+```
+
+La distribució de la variable *time* no s'assembla en res a una distribució normal que té la forma d'una Campana de Gauss, però de totes maneres definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
+
+$H_{0}:$ La variable *time* segueix una distribució normal.
+
+$H_{1}:$ La variable *time* no segueix una distribució normal.
+
+```{r message= FALSE, warning=FALSE}
+#Observem la distribució amb la funció qqnorm
+qqnorm(heart_data$time);qqline(heart_data$time, col = 2)
+#Test de Lilliefors
+lillie.test(heart_data$time)
+```
+
+Efectivament en la representació de la *qqnorm*, les dades s'allunyen de la *qqline*. I el test de *Lilliefors* ens diu que el p-valor =  2.01e-08, per tant com aquest és més petit que 0.05, rebutgem la $H_0$ i diem que la variable *time* no segueix una distribució normal.
+
+
+
+### Correlacions
+
+Per veure quins conjunts de variables estan relacionats entre si, farem servir l'anàlisi multivariant.
+
+
+```{r message= FALSE, warning=FALSE}
+library(reshape2)
+heat <- heart_data[, c('age', 'creatinine_phosphokinase', 'ejection_fraction', 'platelets', 
+                       'serum_creatinine', 'serum_sodium', 'time')]
+qplot(x=Var1, y=Var2, data=melt(cor(heat, use="p")), fill=value, geom="tile") +
+   theme(axis.text.x = element_text(angle = 90)) +
+   coord_fixed()
+```
+
+Com més intentistat de color, vol dir que més correlacionades estan les variables. Observem que les variables que tenen una correlació més alta són: 
+
+* serum_sodium - platelets
+* time - age
+* time - platelets
+* time - serum_creatinine
+* serum_sodium - serum_creatinine
+
+Ara utilitzarem el *heatmap* per agrupar les variables que tenen més relació entre elles. Aquest utilitza un algorisme de *clustering jeràrquic* per a agrupar les variables.
+
+```{r message= FALSE, warning=FALSE}
+trainscaled <- as.matrix(scale(cor(heat, use="p")))
+heatmap(trainscaled, Colv=F, scale='none')
+```
+
+Podem observar en vermell més fort les variables que tenen més relació i com es van agrupant en un *clustering jeràrquic*.
+
+## Tasques de neteja i condicionat del joc de dades
+
+### Binarització de variables
+
+Tornarem a passar les variables categòriques del joc de dades a binàries com teníem a l'inici de la pràctica perquè puguin ser usades en processos de modelatge perquè molts d'aquests procesoss no accepten variables categòriques.
+
+```{r message= FALSE, warning=FALSE}
+#Realizem còpia
+#anaemia
+heart_data$anaemia <- heart_data1$anaemia
+#diabetes
+heart_data$diabetes <- heart_data1$diabetes
+#high_blood_pressure
+heart_data$high_blood_pressure <- heart_data1$high_blood_pressure
+#sex
+heart_data$sex <- heart_data1$sex
+#smoking
+heart_data$smoking <- heart_data1$smoking
+#DEATH_EVENT
+heart_data$DEATH_EVENT <- heart_data1$DEATH_EVENT
+#Comprovem que les transformacions s'hagin realitzat correctament
+str(heart_data)
+```
+
+
+
+
+
+
+
+## Discretització 
+
+Veient les diferents variables que tenim, crec que només té sentit discretitzar la variable *ejection_fraction*, realitzarem una discretització on separarem cada 20%, és a dir 0-20%, 20-40%, 40-60%, 60-80% i 80-100%. I mirarem com varia la distribució de les dades.
+
+```{r message= FALSE, warning=FALSE}
+#Discretitzem ejection_fraction
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction < 20] <- "0-20%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 20 & heart_data$ejection_fraction < 40] <- "20-40%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 40 & heart_data$ejection_fraction < 60] <- "40-60%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 60 & heart_data$ejection_fraction < 80] <- "60-80%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 80] <- "80-100%"
+```
+
+Normalment eliminariem la columna discretitzada però en aquest cas la mantindrem perquè en funció del modelatge que volguem realitzar en un futur, podriem necessitar la variable en format numèric. 
+
+```{r message= FALSE, warning=FALSE}
+head(heart_data)
+plot(as.factor(heart_data$ejection_fraction_discr))
+```
+
+
+
+## Estudi PCA
+
+L'anàlisis de components principals o PCA (*principal component analysis*) és una tècnica que s'utilitza per descriure un conjunt de dades amb noves variables no correlacionades. Una de les aplicacions del PCA és la reducció de la dimensionalitat d'un conjunt de dades perdent la menor cantitat d'informació posible. [@pca] 
+
+Quan tenim un gran nombre de variables cuantitatives posiblement correlacionades, permet reduir-les a un número menor de components principals o variables transformades que expliquen gran part de la variabilitat de les dades. També podem utilitzar-lo com a eina per a la visualització de les dades. [@pca2]
+
+Per començar amb l'anàlisis de components, hem d'estandaritzar totes les dades per a que segueixin una distribució normal. En l'anàlisis exploratòri hem observar que cap d'elles ho era. Per tant a continuació normalitzarem totes les variables.
+
+
+Utilitzarem la funció *prcomp()*, aquesta ens centra les variables perquè  tinguin una mitja de 0 i amb l'argument scale = TRUE, ens les escala amb una desviació estàndard d'1.
+
+```{r message= FALSE, warning=FALSE}
+#Executem anàlisis pca
+pca_data <- prcomp(heart_data1, scale = TRUE)
+names(pca_data)
+#Mostra dels primers 6 elements del vector de loadings dels primers 4 components principals
+head(pca_data$rotation)[,1:4]
+#Observem la dimensió
+dim(pca_data$rotation)
+#Observem summary
+summary(pca_data)
+```
+
+A continuació generament un *scree plot* que representi els eigenvalors ordenats de major a menor per a poder escollir quin és el numero òptim de components principals.
+
+```{r message= FALSE, warning=FALSE}
+library(factoextra)
+#eigenvalues(screeplot)
+fviz_screeplot(pca_data, addlabels = TRUE)
+```
+
+
+Apreciem que la diferència entre 1 dimensió i 4 dimensions és molt gran, però a partir d'aquí, entre 5 i 8 dimensions el pendent de la corva s'estabilitza bastant.
+
+
+
+```{r message= FALSE, warning=FALSE}
+#Contribució de les variables
+fviz_contrib(pca_data, choice = "var", axes = 1)
+```
+
+En aquesta representació observem la contribució de les variables a una component. Si disposesim de moltes variables, podriem ometre les que menys contribueixen, com *smoking*, *creatinine_phosphokinase*, *sex* i *diabetes* però com només en tenim 13, nosaltres les tindrem totes en compte.
+
+Ara calcularem la proporció de la variança explicada (PVE) per a cada component principal.
+
+```{r message= FALSE, warning=FALSE}
+#Contribució de les variables en %
+PVE <- 100*pca_data$sdev^2/sum(pca_data$sdev^2)
+PVE
+```
+
+Aquestes dades ens confirmen el que observàvem al gràfic dels *eigenvalues*, la primera component explica el 15.62% de la variança, la segona el 12.77%, mentre que per exemple la 13 dimensió només el 2.89%.
+
+```{r message= FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+
+plot(PVE, type = "o", 
+     ylab = "PVE", 
+     xlab = "Componente principal", 
+     col = "blue")
+plot(cumsum(PVE), type = "o", 
+     ylab = "PVE acumulada", 
+     xlab = "Componente principal", 
+     col = "brown3")
+```
+
+Els 7 primers components principals representen al voltant del 70% de la variança.
+
+```{r message= FALSE, warning=FALSE}
+#Representació de la variança acumulada
+prop_varianza_acum <- cumsum(PVE)
+ggplot(data = data.frame(prop_varianza_acum, pc = factor(1:13)),
+       aes(x = pc, y = prop_varianza_acum, group = 1)) +
+  geom_point() +
+  geom_line() +
+  geom_label(aes(label = round(prop_varianza_acum,2))) +
+  theme_bw() +
+  labs(x = "Componentes principales", 
+       y = "Prop. varianza explicada acumulada")
+```
+
+En aquest gràfic encara ho veiem més clar, els primers 7 components principals, representen el 70.02% de la variança. Es veu clar que el pendent de la corba és molt constant, cosa que provoca que si volem reduïr la dimensionalitat, hem de perdre una part gairebé proporcional de la informació.
+
+
+```{r message= FALSE, warning=FALSE}
+#Gràfic de variables. 
+fviz_pca_var(pca_data,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+)
+```
+
+Les variables que estan correlacionades apunten cap a la mateixa direcció, en canvi les que no ho estan apunten en direccions oposades. En aquest gràfic també observem que en funció de la contribució, les variables tenen una tonalitat amb tons més càlids. 
+
+
+
+
+\newpage
+# Referències
+
+
+
+
+
+
+
+
+
+
+
+
+
