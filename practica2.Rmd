@@ -50,12 +50,14 @@ Descripció de les variables contingudes al joc de dades:
 * **DEATH_EVENT:** factor que indica si el pacient ha mort o no durant el període de seguiment.
 
 
-
+\newpage
 # Integració i selecció de les dades d’interès a analitzar. 
 
 
 Un cop hem vist els atributs del joc dades, determinem que tots són d'interès perquè no sabem quins atributs influeixen a l'hora de predir si una persona es morirà o no d'un atac de cor. Per tant de moment utilitzarem tots els atributs inclosos en el joc de dades i més endavant ja conclourem si tots són significatius o realment hi ha algun atribut que és prescindible per aquesta anàlisi.
 
+
+\newpage
 # Neteja de les dades.
 
 Carreguem el joc de dades i comprovem que aquest s'ha llegit de forma correcta:
@@ -78,8 +80,6 @@ str(heart_data)
 Observem que tenim variables que no estan en el format que haurien d'estar. Per tant, abans de continuar amb l'anàlisi exploratòria, transformarem les binaries i booleanes a categòriques per tal de visualitzar millor com estan distribuïdes les dades. Ens guardarem una còpia del joc de dades per a poder recuperar la transfromació, ja que la majoria d'eines i models per analitzar dades només accepten números com a valors de les variables.
 
 ```{r message= FALSE, warning=FALSE}
-#Realizem una còpia
-heart_data1 <- heart_data
 #anaemia
 i <- heart_data$anaemia == '1'
 heart_data$anaemia[i] <- "Si"
@@ -190,17 +190,18 @@ boxplot.stats(heart_data$serum_sodium)$out
 Després de visualitzar els possibles *outliers* que presenta el nostre joc de dades, s'ha decidit no excloure'ls perquè molt probablement representen dades reals que després ens ajudaran a veure quan i perquè una persona és mor en un període de temps posterior a patir un infart.
 
 
+\newpage
+# Anàlisi de les dades.
 
+## Selecció dels grups de dades que es volen analitzar/comparar
 
+<!--Completar-->
 
+Analitzarem l'influència que té
 
+## Comprovació de la normalitat i homogeneïtat de la variància.
 
-
-
-
-
-
-
+<!-- Falta anàlisi variança-->
 
 ### Variables categòriques
 
@@ -232,9 +233,10 @@ Un cop vistes les distribucions categòriques, passarem a analitzar les distribu
 
 #### Age
 
-```{r message= FALSE, warning=FALSE}
+```{r warning=FALSE}
 library(ggplot2)
-ggplot(heart_data, aes(x = age)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Edat dels pacients")
+ggplot(heart_data, aes(x = age)) + geom_histogram(fill="white",colour="black") + 
+  ylab("Freqüència") + xlab("Edat dels pacients")
 ```
 
 Veiem que la distribució, no sembla que segueixi una distribució normal perquè tenim molts alts i baixos, tot i que sí que té forma de campana de Gauss. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat. Tant per aquesta variable, com les següents, assumirem un nivell de confiança del 95%. Per tant $\alpha = 0.05$.
@@ -261,8 +263,10 @@ El test de Lilliefors ens dóna que el p-valor = 0.001304. Perquè  segueixi nor
 
 #### creatinine_phosphokinase
 
-```{r message= FALSE, warning=FALSE}
-ggplot(heart_data, aes(x = creatinine_phosphokinase)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Creatinine_phosphokinase en mcg/L")
+```{r warning=FALSE}
+ggplot(heart_data, aes(x = creatinine_phosphokinase)) +
+  geom_histogram(fill="white",colour="black") + ylab("Freqüència") +
+  xlab("Creatinine_phosphokinase en mcg/L")
 ```
 
 No sembla que segueixi una distribució normal. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
@@ -287,10 +291,10 @@ Efectivament, el p-valor és més petit que 0.05 i per tant rebutgem la $H_0$ i 
 
 #### Ejection_fraction
 
-```{r message= FALSE, warning=FALSE}
-breaks <- pretty(range(heart_data$ejection_fraction), n = nclass.FD(heart_data$ejection_fraction), min.n = 1)
-bwidth <- breaks[2]-breaks[1]
-ggplot(heart_data, aes(x = ejection_fraction)) + geom_histogram(binwidth=bwidth,fill="white",colour="black") + ylab("Freqüència") + xlab("Ejection_fraction en %")
+```{r warning=FALSE}
+ggplot(heart_data, aes(x = ejection_fraction)) + 
+  geom_histogram(fill="white",colour="black") + 
+  ylab("Freqüència") + xlab("Ejection_fraction en %")
 ```
 
 L'inici del gràfic si que sembla que segueix una distribució normal però a partir de la mediana sembla que no, per tant com en els apartats anteriors realitzarem un test per sortir de dubtes. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
@@ -315,8 +319,9 @@ Doncs el p-valor és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que
 
 #### Platelets
 
-```{r message= FALSE, warning=FALSE}
-ggplot(heart_data, aes(x = platelets)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Platelets en kiloplatelets/m")
+```{r warning=FALSE}
+ggplot(heart_data, aes(x = platelets)) + geom_histogram(fill="white",colour="black") + 
+  ylab("Freqüència") + xlab("Platelets en kiloplatelets/m")
 ```
 
 La distribució de la variable *platelets* succeeix igual que en l'apartat anterior, no sembla que segueixi una distribució normal. A continuació ho verificarem definint les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
@@ -343,8 +348,10 @@ Doncs el p-valor (1.904e-10) és més petit que 0.05 i per tant rebutgem la $H_0
 
 #### Serum_creatinine
 
-```{r message= FALSE, warning=FALSE}
-ggplot(heart_data, aes(x = serum_creatinine)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Serum_creatinine en mg/dLL")
+```{r warning=FALSE}
+ggplot(heart_data, aes(x = serum_creatinine)) + 
+  geom_histogram(fill="white",colour="black") + ylab("Freqüència") + 
+  xlab("Serum_creatinine en mg/dLL")
 ```
 
 Observem clarament com la variable *serum_creatinine* no té forma de Campana de Gauss i no segueix una distribució normal. De totes maneres ens n'assegurarem definint les hipòtesis nul·la i alternativa i avaluant si compleix l'assumpció de normalitat.
@@ -371,8 +378,9 @@ Efectivament el p-valor (2.2e-16) és més petit que 0.05 i per tant rebutgem la
 
 #### Serum_sodium
 
-```{r message= FALSE, warning=FALSE}
-ggplot(heart_data, aes(x = serum_sodium)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Serum_sodium en mEq/L")
+```{r warning=FALSE}
+ggplot(heart_data, aes(x = serum_sodium)) + geom_histogram(fill="white",colour="black") + 
+  ylab("Freqüència") + xlab("Serum_sodium en mEq/L")
 ```
 
 La distribució de la variable *serum_sodium* podria ser normal, per això ho comprovarem definint les hipòtesis nul·la i alternativa i avaluant si compleix l'assumpció de normalitat.
@@ -398,10 +406,11 @@ Doncs el p-valor = 8.683e-10, per tant com aquest és més petit que 0.05, rebut
 
 #### Time
 
-```{r message= FALSE, warning=FALSE}
+```{r warning=FALSE}
 breaks <- pretty(range(heart_data$time), n = nclass.FD(heart_data$time), min.n = 1)
 bwidth <- breaks[2]-breaks[1]
-ggplot(heart_data, aes(x = time)) + geom_histogram(fill="white",colour="black") + ylab("Freqüència") + xlab("Time en dies")
+ggplot(heart_data, aes(x = time)) + geom_histogram(fill="white",colour="black") +
+  ylab("Freqüència") + xlab("Time en dies")
 ```
 
 La distribució de la variable *time* no s'assembla en res a una distribució normal que té la forma d'una Campana de Gauss, però de totes maneres definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
@@ -410,7 +419,7 @@ $H_{0}:$ La variable *time* segueix una distribució normal.
 
 $H_{1}:$ La variable *time* no segueix una distribució normal.
 
-```{r message= FALSE, warning=FALSE}
+```{r, warning=FALSE}
 #Observem la distribució amb la funció qqnorm
 qqnorm(heart_data$time);qqline(heart_data$time, col = 2)
 #Test de Lilliefors
@@ -420,6 +429,11 @@ lillie.test(heart_data$time)
 Efectivament en la representació de la *qqnorm*, les dades s'allunyen de la *qqline*. I el test de *Lilliefors* ens diu que el p-valor =  2.01e-08, per tant com aquest és més petit que 0.05, rebutgem la $H_0$ i diem que la variable *time* no segueix una distribució normal.
 
 
+## Aplicació de proves estadístiques per comparar els grups de dades. 
+
+### Contrast hipòtesis
+
+<!--Completar-->
 
 ### Correlacions
 
@@ -452,35 +466,28 @@ heatmap(trainscaled, Colv=F, scale='none')
 
 Podem observar en vermell més fort les variables que tenen més relació i com es van agrupant en un *clustering jeràrquic*.
 
-## Tasques de neteja i condicionat del joc de dades
 
-### Binarització de variables
+### Regressió
 
-Tornarem a passar les variables categòriques del joc de dades a binàries com teníem a l'inici de la pràctica perquè puguin ser usades en processos de modelatge perquè molts d'aquests procesoss no accepten variables categòriques.
+<!--Completar-->
 
-```{r message= FALSE, warning=FALSE}
-#Realizem còpia
-#anaemia
-heart_data$anaemia <- heart_data1$anaemia
-#diabetes
-heart_data$diabetes <- heart_data1$diabetes
-#high_blood_pressure
-heart_data$high_blood_pressure <- heart_data1$high_blood_pressure
-#sex
-heart_data$sex <- heart_data1$sex
-#smoking
-heart_data$smoking <- heart_data1$smoking
-#DEATH_EVENT
-heart_data$DEATH_EVENT <- heart_data1$DEATH_EVENT
-#Comprovem que les transformacions s'hagin realitzat correctament
-str(heart_data)
-```
+\newpage
+# Representació dels resultats a partir de taules i gràfiques.
+
+<!--Completar-->
+
+\newpage
+# Resolució del problema. 
 
 
 
 
 
 
+
+
+
+<!--==================================================-->
 
 ## Discretització 
 
@@ -489,9 +496,12 @@ Veient les diferents variables que tenim, crec que només té sentit discretitza
 ```{r message= FALSE, warning=FALSE}
 #Discretitzem ejection_fraction
 heart_data$ejection_fraction_discr[heart_data$ejection_fraction < 20] <- "0-20%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 20 & heart_data$ejection_fraction < 40] <- "20-40%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 40 & heart_data$ejection_fraction < 60] <- "40-60%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 60 & heart_data$ejection_fraction < 80] <- "60-80%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 20 & 
+                                     heart_data$ejection_fraction < 40] <- "20-40%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 40 & 
+                                     heart_data$ejection_fraction < 60] <- "40-60%"
+heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 60 & 
+                                     heart_data$ejection_fraction < 80] <- "60-80%"
 heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 80] <- "80-100%"
 ```
 
@@ -501,103 +511,6 @@ Normalment eliminariem la columna discretitzada però en aquest cas la mantindre
 head(heart_data)
 plot(as.factor(heart_data$ejection_fraction_discr))
 ```
-
-
-
-## Estudi PCA
-
-L'anàlisis de components principals o PCA (*principal component analysis*) és una tècnica que s'utilitza per descriure un conjunt de dades amb noves variables no correlacionades. Una de les aplicacions del PCA és la reducció de la dimensionalitat d'un conjunt de dades perdent la menor cantitat d'informació posible. [@pca] 
-
-Quan tenim un gran nombre de variables cuantitatives posiblement correlacionades, permet reduir-les a un número menor de components principals o variables transformades que expliquen gran part de la variabilitat de les dades. També podem utilitzar-lo com a eina per a la visualització de les dades. [@pca2]
-
-Per començar amb l'anàlisis de components, hem d'estandaritzar totes les dades per a que segueixin una distribució normal. En l'anàlisis exploratòri hem observar que cap d'elles ho era. Per tant a continuació normalitzarem totes les variables.
-
-
-Utilitzarem la funció *prcomp()*, aquesta ens centra les variables perquè  tinguin una mitja de 0 i amb l'argument scale = TRUE, ens les escala amb una desviació estàndard d'1.
-
-```{r message= FALSE, warning=FALSE}
-#Executem anàlisis pca
-pca_data <- prcomp(heart_data1, scale = TRUE)
-names(pca_data)
-#Mostra dels primers 6 elements del vector de loadings dels primers 4 components principals
-head(pca_data$rotation)[,1:4]
-#Observem la dimensió
-dim(pca_data$rotation)
-#Observem summary
-summary(pca_data)
-```
-
-A continuació generament un *scree plot* que representi els eigenvalors ordenats de major a menor per a poder escollir quin és el numero òptim de components principals.
-
-```{r message= FALSE, warning=FALSE}
-library(factoextra)
-#eigenvalues(screeplot)
-fviz_screeplot(pca_data, addlabels = TRUE)
-```
-
-
-Apreciem que la diferència entre 1 dimensió i 4 dimensions és molt gran, però a partir d'aquí, entre 5 i 8 dimensions el pendent de la corva s'estabilitza bastant.
-
-
-
-```{r message= FALSE, warning=FALSE}
-#Contribució de les variables
-fviz_contrib(pca_data, choice = "var", axes = 1)
-```
-
-En aquesta representació observem la contribució de les variables a una component. Si disposesim de moltes variables, podriem ometre les que menys contribueixen, com *smoking*, *creatinine_phosphokinase*, *sex* i *diabetes* però com només en tenim 13, nosaltres les tindrem totes en compte.
-
-Ara calcularem la proporció de la variança explicada (PVE) per a cada component principal.
-
-```{r message= FALSE, warning=FALSE}
-#Contribució de les variables en %
-PVE <- 100*pca_data$sdev^2/sum(pca_data$sdev^2)
-PVE
-```
-
-Aquestes dades ens confirmen el que observàvem al gràfic dels *eigenvalues*, la primera component explica el 15.62% de la variança, la segona el 12.77%, mentre que per exemple la 13 dimensió només el 2.89%.
-
-```{r message= FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-
-plot(PVE, type = "o", 
-     ylab = "PVE", 
-     xlab = "Componente principal", 
-     col = "blue")
-plot(cumsum(PVE), type = "o", 
-     ylab = "PVE acumulada", 
-     xlab = "Componente principal", 
-     col = "brown3")
-```
-
-Els 7 primers components principals representen al voltant del 70% de la variança.
-
-```{r message= FALSE, warning=FALSE}
-#Representació de la variança acumulada
-prop_varianza_acum <- cumsum(PVE)
-ggplot(data = data.frame(prop_varianza_acum, pc = factor(1:13)),
-       aes(x = pc, y = prop_varianza_acum, group = 1)) +
-  geom_point() +
-  geom_line() +
-  geom_label(aes(label = round(prop_varianza_acum,2))) +
-  theme_bw() +
-  labs(x = "Componentes principales", 
-       y = "Prop. varianza explicada acumulada")
-```
-
-En aquest gràfic encara ho veiem més clar, els primers 7 components principals, representen el 70.02% de la variança. Es veu clar que el pendent de la corba és molt constant, cosa que provoca que si volem reduïr la dimensionalitat, hem de perdre una part gairebé proporcional de la informació.
-
-
-```{r message= FALSE, warning=FALSE}
-#Gràfic de variables. 
-fviz_pca_var(pca_data,
-             col.var = "contrib", # Color by contributions to the PC
-             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             repel = TRUE     # Avoid text overlapping
-)
-```
-
-Les variables que estan correlacionades apunten cap a la mateixa direcció, en canvi les que no ho estan apunten en direccions oposades. En aquest gràfic també observem que en funció de la contribució, les variables tenen una tonalitat amb tons més càlids. 
 
 
 
