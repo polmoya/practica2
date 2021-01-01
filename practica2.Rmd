@@ -26,7 +26,7 @@ library(knitr)
 
 Després de valorar diversos jocs de dades que semblaven interessants i valorar que aquests eren aptes per a la realització de la pràctica, ens hem decantat per un sobre persones que han sofert infarts. Aquest joc de dades té vàries característiques que fan que pugui ser un bon model per a aplicar algoritmes supervisats, algoritmes no supervisats i regles d'associació.
 
-Les malalties cardiovasculars són la principal causa de mort globalment (fins al 30%), moren aproximadament 17.9 milions de persones cada any. L'atac de cor és una de les principals conseqüències, causades per les malalties cardiovasculars, aquest joc de dades conté 12 atributs que es poden utilitzar per a predir la mortalitat dels atacs de cor. [@cvd]
+Les malalties cardiovasculars són la principal causa de mort globalment (fins al 30%), cada any moren aproximadament 17.9 milions de persones. L'atac de cor és una de les principals conseqüències, causades per les malalties cardiovasculars, aquest joc de dades conté 12 atributs que es poden utilitzar per a predir la mortalitat dels atacs de cor. [@cvd]
 
 La majoria dels atacs de cor es poden prevenir millorant certs hàbits, com per exemple fumar, una mala dieta, l'obesitat, el sedentarisme i l'alcoholisme.
 
@@ -35,19 +35,19 @@ L'objectiu del joc de dades és intentar predir si persones de risc, han mort o 
 
 Descripció de les variables contingudes al joc de dades:
 
-* **age:** integer que descriu edat del pacient (anys).
-* **anaemia:** factor que especifica si el pacient pateix anèmia o no.
-* **creatinine_phosphokinase:** integer que representa el nivell de *CPK* en la sang en (*mcg/L*).
-* **diabetes:** factor que indica si el pacient és diabètic o no.
-* **ejection_fraction :** integer que descriu el percentatge de sang que surt del cor en cada contracció en (%).
-* **high_blood_pressure:** factor que indica si el pacient té hipertensió o no.
-* **platelets:** numeric que representa el nombre de plaquetes en sang del pacient (kiloplatelets/mL).
-* **serum_creatinine:** numeric que representa el nivell de creatinina en la sang (mg/dL).
-* **serum_sodium:** integer que indica el nivell de sodi en sang (mEq/L).
-* **sex:** factor que indica si el sexe del pacient és masculí o femení.
-* **smoking:** factor que indica si el pacient fuma o no.
-* **time:** integer període de seguiment en dies.
-* **DEATH_EVENT:** factor que indica si el pacient ha mort o no durant el període de seguiment.
+* **age *[integer]*:** descriu edat del pacient (anys).
+* **anaemia *[factor]*:** que especifica si el pacient pateix anèmia o no.
+* **creatinine_phosphokinase *[integer]*:** representa el nivell de *CPK* en la sang en (*mcg/L*).
+* **diabetes *[factor]*:** indica si el pacient és diabètic o no.
+* **ejection_fraction *[integer]*:** descriu el percentatge de sang que surt del cor en cada contracció en (%).
+* **high_blood_pressure *[factor]*:** indica si el pacient té hipertensió o no.
+* **platelets *[numeric]*:** representa el nombre de plaquetes en sang del pacient (kiloplatelets/mL).
+* **serum_creatinine *[numeric]*:** representa el nivell de creatinina en la sang (mg/dL).
+* **serum_sodium *[integer]*:** indica el nivell de sodi en sang (mEq/L).
+* **sex *[factor]*:** indica si el sexe del pacient és masculí o femení.
+* **smoking *[factor]*:** indica si el pacient fuma o no.
+* **time *[integer]*:** període de seguiment en dies.
+* **DEATH_EVENT *[factor]*:** indica si el pacient ha mort o no durant el període de seguiment.
 
 
 \newpage
@@ -63,7 +63,8 @@ Un cop hem vist els atributs del joc dades, determinem que tots són d'interès 
 Carreguem el joc de dades i comprovem que aquest s'ha llegit de forma correcta:
 
 ```{r message= FALSE, warning=FALSE}
-heart_data<-read.csv("./heart_failure_clinical_records_dataset.csv", header=T, sep=",")
+heart_data<-read.csv("./heart_failure_clinical_records_dataset.csv", header=T, 
+                     sep=",", stringsAsFactors = FALSE)
 #Comprovem que s'ha llegit correctament
 head(heart_data)
 #Comprovem que la dimensió és la correcta
@@ -77,14 +78,19 @@ dim(heart_data)
 str(heart_data)
 ```
 
-Observem que tenim variables que no estan en el format que haurien d'estar. Per tant, abans de continuar amb l'anàlisi exploratòria, transformarem les binaries i booleanes a categòriques per tal de visualitzar millor com estan distribuïdes les dades. Ens guardarem una còpia del joc de dades per a poder recuperar la transfromació, ja que la majoria d'eines i models per analitzar dades només accepten números com a valors de les variables.
+Observem que tenim variables que no estan en el format que haurien d'estar. Per tant, abans de continuar amb l'anàlisi exploratòria, transformarem les binaries i booleanes a categòriques per tal de visualitzar millor com estan distribuïdes les dades. 
 
 ```{r message= FALSE, warning=FALSE}
-#anaemia
+#Expliquem amb l'atribut [anaemia] com fem la transformació de tipus. 
+#Obtenim un vector que conté les posicions on l'observació de l'atribut [anaemia] = 1
 i <- heart_data$anaemia == '1'
+#Hem decidit associar el valor '1' amb un 'Si' 
 heart_data$anaemia[i] <- "Si"
+#Obtenim un vector que conté les posicions on l'observació de l'atribut [anaemia] = 0
 i <- heart_data$anaemia == '0'
+#Hem decidit associar el valor '0' amb un 'No' 
 heart_data$anaemia[i] <- "No"
+#Finalment asignem aquest 2 valors 'Si'/'No' i convertim l'atribut a tipus categoric.
 heart_data$anaemia <- as.factor(heart_data$anaemia)
 #diabetes
 i <- heart_data$diabetes == '1'
@@ -129,6 +135,108 @@ A continuació visualitzarem una descriptiva de les variables amb la funció *su
 summary(heart_data)
 ```
 
+Ara passarem a validar la tendència dels atributs numèrics per veure si estem davant de distribucions de dades simètriques o sesgades. Per aconseguir-ho definirem una funció que ens permetrà obtenir la *"moda"*, que és l'única messura de tendència central que la funció *"summary()"* no ens ha mostrat.
+
+```{r message= FALSE, warning=FALSE}
+
+# Funció que ens retorna la "moda" d'un vector de dades
+# Param:
+#   v -> vector de dades a analitzar
+# Return:
+#   La "moda" del vector analitzat
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+#Obtenim la "moda" de l'atribut [age]
+result <- getmode(heart_data$age)
+print(paste("La moda per l'atribut [age] es: ",result))
+
+#Obtenim la "moda" de l'atribut [creatinine_phosphokinase]
+result <- getmode(heart_data$creatinine_phosphokinase)
+print(paste("La moda per l'atribut [creatinine_phosphokinase] es: ",result))
+
+#Obtenim la "moda" de l'atribut [ejection_fraction]
+result <- getmode(heart_data$ejection_fraction)
+print(paste("La moda per l'atribut [ejection_fraction] es: ",result))
+
+#Obtenim la "moda" de l'atribut [platelets]
+result <- getmode(heart_data$platelets)
+print(paste("La moda per l'atribut [platelets] es: ",result))
+
+#Obtenim la "moda" de l'atribut [serum_creatinine]
+result <- getmode(heart_data$serum_creatinine)
+print(paste("La moda per l'atribut [serum_creatinine] es: ",result))
+
+#Obtenim la "moda" de l'atribut [serum_sodium]
+result <- getmode(heart_data$serum_sodium)
+print(paste("La moda per l'atribut [serum_sodium] es: ",result))
+
+#Obtenim la "moda" de l'atribut [time]
+result <- getmode(heart_data$time)
+print(paste("La moda per l'atribut [time] es: ",result))
+
+
+```
+Si ara agafem totes les mesures de tendencia central d'aquests atributs podrem fer-nos una idea de la tendència que tenen.  
+
+L'atribut **`age`**   
+
+  + Mean:   60.83  
+  + Median: 60.00   
+  + Mode:   60.00  
+  
+  Les 3 messures són pràcticament iguals i per tant la distribució de les dades serà simètrica.
+  
+L'atribut **`creatinine_phosphokinase`**   
+
+  + Mean:   581.00  
+  + Median: 250.00   
+  + Mode:   582.00  
+  
+  Hi han 2 messures molt iguals i una de molt diferent i per tant la distribució de les dades serà sesgada.
+
+L'atribut **`ejection_fraction`**   
+
+  + Mean:   38.08  
+  + Median: 38.00  
+  + Mode:   35.00  
+  
+  Les 3 messures són pràcticament iguals i per tant la distribució de els dades serà simètrica.
+
+L'atribut **`platelets`**   
+
+  + Mean:   263358.00  
+  + Median: 262000.00 
+  + Mode:   263358.03 
+  
+  Hi ha 2 messures iguals i una altre una mica diferent i per tant la distribució de les dades serà sesgada.
+
+L'atribut **`serum_creatinine`**   
+
+  + Mean:   1.394    
+  + Median: 1.100  
+  + Mode:   1.000  
+  
+  Hi han 2 messures pràcticament iguals i una altre diferent i per tant la distribució de les dades serà sesgada.
+
+L'atribut **`serum_sodium`**   
+
+  + Mean:   136.6  
+  + Median: 137.0  
+  + Mode:   136.0  
+  
+  Les 3 messures són pràcticament iguals i per tant la distribució de les dades serà simètrica.
+
+L'atribut **`time`**   
+
+  + Mean:   130.3  
+  + Median: 115.0  
+  + Mode:   187.0  
+  
+  Les 3 messures són diferents i per tant la distribució de les dades serà sesgada.  
+
 
 ## Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
 
@@ -140,12 +248,22 @@ A continuació estudiarem i tractarem els valors buits (*NA*):
 colSums(is.na(heart_data))
 ```
 
-Com podem observar, no hi ha valors buits al joc de dades per tant podem seguir endavant. 
+Com podem observar, no hi ha valors buits al nostre joc de dades per tant no ens és necessari tractar-los i podem seguir endavant. Però si en disposéssim, tindríem diverses opcions per a tractar-los, nosaltres ens decantaríem per si la variable té un percentatge molt elevat de valors no disponibles, eliminaríem directament la variable. En canvi si el percentatge de valors no disponibles és baix, el que realitzaríem és reemplaçar aquests per la mediana.
 
 ## Identificació i tractament de valors extrems.
 
 
-Visualitzarem els valors extrems o *outliers* amb un boxplot per cada variable numèrica.
+Visualitzarem els valors extrems o *outliers* amb un *boxplot* per cada variable numèrica.  
+
+Els gràfics tipus *boxplot* mostra 5 valors de la distribució de les observacions de l'atribut avaluat:  
+
+* Extrem superior de la capsa indica el *3º Quartil*.  
+* Extrem inferior de la capsa indica el *1º Quartil*.  
+* La *"median"* està reflectida amb una ratlla dins de la capsa.  
+* Les 2 línies *"whiskers"* ubicades fora de la capsa indiquen el   valor mínim i màxim. El màxim = (3º Quartil + (3º Quartil - 1º Quartil) * 1'5) +  i el mínim = (1º Quartil - (3º Quartil - 1º Quartil) * 1'5).  
+La distribució de dades dins la capsa es coneix com *ICR* (3º Quartil - 1º Quartil).  
+* Les dades més enllà del valors indicats pels "whiskers" seràn considerats com a possibles *"outliers"*.  
+
 
 ```{r message= FALSE, warning=FALSE}
 #Estudiem els outliers
@@ -181,11 +299,11 @@ summary(heart_data$serum_sodium)
 boxplot.stats(heart_data$serum_sodium)$out
 ```
 
-* *creatinine_phosphokinase*: observem que tenim bastanta quantitat de posibles outliers pel costat dret de la distribució i aquests separen molt de la mediana i la mitjana.
-* *ejection_fraction*: només tenim 2 outliers i no són excessivament grans.
-* *platelets*: en aquesta variable també tenim una gran quantitat d'outliers i n'hi ha pels dos costats de la distribució.
-* *serum_creatinine*: tenim outliers que es separen molt de les variables centrals, per exemple la mediana és 1.1 i teni mun màxim de 9.4.
-* *serum_sodium*: en aquesta variable només tenim 4 outliers i proporcionalment no s'allunyen tant com en la variable *serum_creatinine*.
+* **creatinine_phosphokinase**: observem que tenim bastanta quantitat de posibles outliers pel costat dret de la distribució i aquests separen molt de la mediana i la mitjana.
+* **ejection_fraction**: només tenim 2 outliers i no són excessivament grans.
+* **platelets**: en aquesta variable també tenim una gran quantitat d'outliers i n'hi ha pels dos costats de la distribució.
+* **serum_creatinine**: tenim outliers que es separen molt de les variables centrals, per exemple la mediana és 1.1 i teni mun màxim de 9.4.
+* **serum_sodium**: en aquesta variable només tenim 4 outliers i proporcionalment no s'allunyen tant com en la variable **serum_creatinine**.
 
 Després de visualitzar els possibles *outliers* que presenta el nostre joc de dades, s'ha decidit no excloure'ls perquè molt probablement representen dades reals que després ens ajudaran a veure quan i perquè una persona és mor en un període de temps posterior a patir un infart.
 
@@ -195,15 +313,56 @@ Després de visualitzar els possibles *outliers* que presenta el nostre joc de d
 
 ## Selecció dels grups de dades que es volen analitzar/comparar
 
-<!--Completar-->
+Ara passarem a definir alguns subgrups de dades del nostre dataset que creiem que poden ser interessants a l'hora de l'anàlisi.  L'elecció la farem tenim en ment algunes preguntes que ens volem respondre, com per exemple:  
 
-Analitzarem l'influència que té
+  * Tenen més edat els pacients que acaben morint.  
+  * Tenen un nivell major de `platelets` els pacients que acaben morint  
+  * Tenen un major seguiment en dies els pacients que acaben morint.  
+  * Tenen un nivell major de `creatinine_phosphokinase` els pacients que acaben morint.  
+  
+Aprofitarem el mètode *"describeBy()"* que ens aportarà informació rellevant per conèixer per avançat dades referent a com es distribueixen les observacions dels atributs numèrics versus a quina classe pertanyen.  
+
+```{r message= FALSE, warning=FALSE}
+
+#Agrupació indicant si els pacients acaben morint o no
+heart_data.SI.Death <- subset(heart_data, DEATH_EVENT == "Si")
+heart_data.NO.Death <- subset(heart_data, DEATH_EVENT == "No")
+
+#Agrupació per malatia
+heart_data.diabetic <- subset(heart_data, diabetes == 'Si')
+print(paste("Rows [Diabetes]: ", dim(heart_data.diabetic)[1]))
+
+heart_data.hipertens <- subset(heart_data, high_blood_pressure == 'Si')
+print(paste("Rows [High_Blood_Pressure]: ", dim(heart_data.hipertens)[1]))
+heart_data.anemic <- subset(heart_data, anaemia == 'Si')
+print(paste("Rows [Anaemia]: ", dim(heart_data.anemic)[1]))
+
+#Agrupacio per sexe
+heart_data.home <- subset(heart_data, sex == 'masculi')
+print(paste("Rows [Masculi]: ", dim(heart_data.home)[1]))
+heart_data.femeni <- subset(heart_data, sex == 'femeni')
+print(paste("Rows [Femeni]: ", dim(heart_data.femeni)[1]))
+
+#Agrupació per fumador
+heart_data.fumador <- subset(heart_data, smoking == 'Si')
+print(paste("Rows [Smoking]: ", dim(heart_data.fumador)[1]))
+
+#Agrupacio per mort
+heart_data.mort <- subset(heart_data, DEATH_EVENT == 'Si')
+print(paste("Rows [Death]: ", dim(heart_data.mort)[1]))
+```
+
+
+Obtenim informació de les dimensions numèriques en funció de a quina classe pertanyi cadascuna de les observacions que formen el vector, podem veure dades com:  
+
+* Mean, Median, sd, min, max, number of elements.  
+
+El següent pas serà comprovar si les dades segueixen una distribució normal i l'homogeneïtat de les variàncies. Per a fer-ho observarem les distribucions de forma visual i després corroborarem el que observem mitjançant testos estadístics.
 
 ## Comprovació de la normalitat i homogeneïtat de la variància.
 
-<!-- Falta anàlisi variança-->
-
 ### Variables categòriques
+
 
 Visualitzarem i analitzarem les distribucions de les variables categòriques:
 
@@ -227,11 +386,23 @@ Podem observar que tenim:
 * **smoking:**hi ha més persones no fumadores (203) que fumadores (96).
 * **DEATH_EVENT:** hi ha més persones que sobreviuen que persones que moren en el període de seguiment 203 i 96 respectivament.
 
+
 ### Variables numèriques
 
-Un cop vistes les distribucions categòriques, passarem a analitzar les distribucions de les variables numèriques.
+Un cop vistes les distribucions categòriques, passarem a analitzar les distribucions de les variables numèriques. 
 
-#### Age
+Hem de tenir present que el nivell de confiança escollit és del 95%, això s'ha de tenir present per a les assumpcions de normalitat i homogeneïtat de la variança.
+
+Per a analitzar si aquestes variables segueixen una distribució normal, primer observarem amb un gràfic la seva distribució, a continuació observarem també visualment si les dades segueixen una tendència normal i finalment realitzarem un test per a verificar definitivament si la variable segueix una distribució normal o no. El test que haurem d'aplicar és el test de *Lilliefors* perquè desconeixem la mitjana poblacional i tenim més de 50 observacions de la variable a estudiar.
+
+Per comprovar la homogeneïtat de la variança, utilitzarem el test de *Fligner-Killen*, aquest treballa amb 2 grups i per tant s'adapta perfectament a les nostres dades degut a que l'atribut que denota a quina classe pertanyen les diferents mostres només té 2 grups. Aquest test assumeix **l'igualtat de variances** entre els diferents grups de dades a l'hipòtesi nul·la ($H_0$) i per tant valors de probabilitat per sota el nivell de confiança (< 0'05) indicaran refusar la $H_0$ i per tant assumir que existeix heteroscedasticitat.
+
+#### age
+
+&nbsp;
+
+
+**a) Normalitat**
 
 ```{r warning=FALSE}
 library(ggplot2)
@@ -250,6 +421,8 @@ $H_{1}:$ La variable *age* no segueix una distribució normal.
 qqnorm(heart_data$age);qqline(heart_data$age, col = 2)
 ```
 
+Per avaluar si les observacions de l'atribut **age** segueixen una distribució Normal hem utilitzat la funció **qqnorm()**. Aquesta el que fa és ordenar les dades del nostre atribut contra els quantils de una teorica distribució Normal. Els quantils dibuixats al eix X són calculats considerant una distribució Normal amb una mitja = 0 i una desviació standard = 1.
+
 Doncs visualment sembla que la variable *age* sí que segueix una distribució normal. Però per a verificar-ho realitzarem un test d'hipòtesis. Primer mirem la mida de la mostra, com aquesta és superior a 50, hauríem d'aplicar el test de *Kolmogorov-Smirnov*. Però com desconeixem la $\mu$ i $\sigma$ poblacionals, s'ha d'utilitzar el test de *Lilliefors* [@analisisNorm].
 
 ```{r message= FALSE, warning=FALSE}
@@ -260,8 +433,29 @@ lillie.test(heart_data$age)
 
 El test de Lilliefors ens dóna que el p-valor = 0.001304. Perquè  segueixi normalitat amb un nivell de confiança del 95%, el p-valor ha de ser superior a 0.05. Com 0.001304 < 0.05. Rebutgem la $H_{0}$ i diem que la variable *age* no segueix una distribució normal.
 
+&nbsp;
+
+**b) Homogeneïtat de la variança**
+
+```{r message= FALSE, warning=FALSE}
+#Declarem llibreria necessària
+if (!require(psych)) {install.packages("psych")}
+library(psych)
+#Informació de l'atribut age respecte a la classe a la qual pertany
+describeBy(heart_data$age, heart_data$DEATH_EVENT)
+plot (age ~ DEATH_EVENT, data = heart_data)
+fligner.test(age ~ DEATH_EVENT, data = heart_data)
+```
+
+Les observacions de la dimensió `age` que pertanyen a la classe "Si" de la dimensió `death_event` sembla que poden seguir una distribució Normal, mentre les altres no. Mirant amplada de la capsa i l'amplitud d'extrem a extrem podríem aproximar que pot haver una similitud de variances, però s'haurà de contrastar. Desprès d'aplicar el test observem que és compleix la condició 0.007006 < 0.05 i per tant es refusa $H_0$ o sigui es compleix el principi de NO Homocedasticitat.
+
 
 #### creatinine_phosphokinase
+
+&nbsp;
+
+**a) Normalitat**
+
 
 ```{r warning=FALSE}
 ggplot(heart_data, aes(x = creatinine_phosphokinase)) +
@@ -289,7 +483,25 @@ lillie.test(heart_data$creatinine_phosphokinase)
 
 Efectivament, el p-valor és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *creatinine_phosphokinase* no segueix una distribució normal.  
 
-#### Ejection_fraction
+&nbsp;
+
+**b) Homogeneïtat de la variança**
+
+
+```{r message= FALSE, warning=FALSE}
+#Informació de l'atribut [creatinine_phosphokinase] respecte a la classe a la qual pertany
+describeBy(heart_data$creatinine_phosphokinase, heart_data$DEATH_EVENT)
+plot (creatinine_phosphokinase ~ DEATH_EVENT, data = heart_data)
+fligner.test(creatinine_phosphokinase ~ DEATH_EVENT, data = heart_data)
+```
+
+En la dimensió `creatinine_phosphokinase` pràcticament les 2 distribucions segueixen el mateix patró. Després d'aplicar el test test de *Fligner-Killen* observem que NO es compleix la condició 0.6044 < 0.05 i per tant NO es rebutja la $H_0$, concloem que es compleix el principi d'homoscedasticitat.
+
+#### ejection_fraction
+
+&nbsp;
+
+**a) Normalitat**
 
 ```{r warning=FALSE}
 ggplot(heart_data, aes(x = ejection_fraction)) + 
@@ -299,9 +511,9 @@ ggplot(heart_data, aes(x = ejection_fraction)) +
 
 L'inici del gràfic si que sembla que segueix una distribució normal però a partir de la mediana sembla que no, per tant com en els apartats anteriors realitzarem un test per sortir de dubtes. Definirem les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
 
-$H_{0}:$ La variable *ejection_fraction* segueix una distribució normal.
+$H_{0}:$ La variable `ejection_fraction` segueix una distribució normal.
 
-$H_{1}:$ La variable *ejection_fraction* no segueix una distribució normal.
+$H_{1}:$ La variable `ejection_fraction` no segueix una distribució normal.
 
 ```{r message= FALSE, warning=FALSE}
 #Observem la distribució amb la funció qqnorm
@@ -317,18 +529,36 @@ lillie.test(heart_data$ejection_fraction)
 
 Doncs el p-valor és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *ejection_fraction* no segueix una distribució normal.
 
-#### Platelets
+&nbsp;
+
+**b) Homogeneïtat de la variança**
+
+```{r message= FALSE, warning=FALSE}
+#Informació de l'atribut ejection_fraction respecte a la classe a la qual pertany
+describeBy(heart_data$ejection_fraction, heart_data$DEATH_EVENT)
+plot (ejection_fraction ~ DEATH_EVENT, data = heart_data)
+fligner.test(ejection_fraction ~ DEATH_EVENT, data = heart_data)
+```
+
+En la dimensió `ejection_fraction` la similitud de les variances semblen més dificils d'obtenir. Desprès d'aplicar el test observem que és compleix la condició 0.03319 < 0.05 i per tant es refusa $H_0$, es compleix el principi de NO Homocedasticitat.
+
+
+#### platelets
+
+&nbsp;
+
+**a) Normalitat**
 
 ```{r warning=FALSE}
 ggplot(heart_data, aes(x = platelets)) + geom_histogram(fill="white",colour="black") + 
   ylab("Freqüència") + xlab("Platelets en kiloplatelets/m")
 ```
 
-La distribució de la variable *platelets* succeeix igual que en l'apartat anterior, no sembla que segueixi una distribució normal. A continuació ho verificarem definint les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
+La distribució de la variable `platelets` succeeix igual que en l'apartat anterior, no sembla que segueixi una distribució normal. A continuació ho verificarem definint les hipòtesis nul·la i alternativa i avaluarem si compleix l'assumpció de normalitat.
 
-$H_{0}:$ La variable *platelets* segueix una distribució normal.
+$H_{0}:$ La variable `platelets` segueix una distribució normal.
 
-$H_{1}:$ La variable *platelets* no segueix una distribució normal.
+$H_{1}:$ La variable `platelets` no segueix una distribució normal.
 
 ```{r message= FALSE, warning=FALSE}
 #Observem la distribució amb la funció qqnorm
@@ -342,11 +572,26 @@ Veiem que les dades segueixen la línia que representa la distribució normal fi
 lillie.test(heart_data$platelets)
 ```
 
-
 Doncs el p-valor (1.904e-10) és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *platelets* no segueix una distribució normal.
 
+&nbsp;
 
-#### Serum_creatinine
+**b) Homogeneïtat de la variança**
+
+```{r message= FALSE, warning=FALSE}
+#Informació de l'atribut platelets respecte a la classe a la qual pertany
+describeBy(heart_data$platelets, heart_data$DEATH_EVENT)
+plot (platelets ~ DEATH_EVENT, data = heart_data)
+fligner.test(platelets ~ DEATH_EVENT, data = heart_data)
+```
+
+En la dimensió `platelets` les variances tenen certa similitud veient l'amplada de la capsa i la distància entre extrems. Desprès d'aplicar el test observem que NO és compleix la condició 0.1275 < 0.05 i per tant NO es refusa $H_0$, és a dir, es compleix el principi de Homocedasticitat.
+
+#### serum_creatinine
+
+&nbsp;
+
+**a) Normalitat**
 
 ```{r warning=FALSE}
 ggplot(heart_data, aes(x = serum_creatinine)) + 
@@ -375,8 +620,26 @@ lillie.test(heart_data$serum_creatinine)
 
 Efectivament el p-valor (2.2e-16) és més petit que 0.05 i per tant rebutgem la $H_0$ i diem que la variable *serum_creatinine* no segueix una distribució normal.
 
+&nbsp;
 
-#### Serum_sodium
+**b) Homogeneïtat de la variança**
+
+
+```{r message= FALSE, warning=FALSE}
+#Informació de l'atribut serum_creatinine respecte a la classe a la qual pertany
+describeBy(heart_data$serum_creatinine, heart_data$DEATH_EVENT)
+plot (serum_creatinine ~ DEATH_EVENT, data = heart_data)
+fligner.test(serum_creatinine ~ DEATH_EVENT, data = heart_data)
+```
+
+En la dimensió `serum_creatinine` s'observa poca similitud entre les variances. Desprès d'aplicar el test observem que és compleix la condició (2.654 * e^-9) < 0.05 i per tant es refusa $H_0$, és a dir, es compleix el principi de NO Homocedasticitat.
+
+
+#### serum_sodium
+
+&nbsp;
+
+**a) Normalitat**
 
 ```{r warning=FALSE}
 ggplot(heart_data, aes(x = serum_sodium)) + geom_histogram(fill="white",colour="black") + 
@@ -401,10 +664,26 @@ Observem que les dades segueixen bastant la línia que representa la distribuci�
 lillie.test(heart_data$serum_sodium)
 ```
 
-
 Doncs el p-valor = 8.683e-10, per tant com aquest és més petit que 0.05, rebutgem la $H_0$ i diem que la variable *serum_sodium* no segueix una distribució normal.
 
-#### Time
+&nbsp;
+
+**b) Homogeneïtat de la variança**
+
+```{r message= FALSE, warning=FALSE}
+#Informació de l'atribut serum_sodium respecte a la classe a la qual pertany
+describeBy(heart_data$serum_sodium, heart_data$DEATH_EVENT)
+plot (serum_sodium ~ DEATH_EVENT, data = heart_data)
+fligner.test(serum_sodium ~ DEATH_EVENT, data = heart_data)
+```
+
+En la dimensió `serum_sodium` les observacions que pertanyen a la classe "Si" de la dimensió `death_event` l'amplada de capsa i distància entre extrems semblen iguals per les 2 distribucions, per tant podríen predir que les variances tenen certa similitud i quan avaluaem el test veiem que p-value = 0.01336 < 0.05 i que per tant es refusa la $H_0$, per tant es compleix el principi de NO Homocedasticitat.
+
+#### time
+
+&nbsp;
+
+**a) Normalitat**
 
 ```{r warning=FALSE}
 breaks <- pretty(range(heart_data$time), n = nclass.FD(heart_data$time), min.n = 1)
@@ -428,17 +707,230 @@ lillie.test(heart_data$time)
 
 Efectivament en la representació de la *qqnorm*, les dades s'allunyen de la *qqline*. I el test de *Lilliefors* ens diu que el p-valor =  2.01e-08, per tant com aquest és més petit que 0.05, rebutgem la $H_0$ i diem que la variable *time* no segueix una distribució normal.
 
+&nbsp;
+
+**b) Homogeneïtat de la variança**
+
+```{r message=FALSE, warning=FALSE}
+#Informació de l'atribut [time] respecte a la classe a la qual pertany
+describeBy(heart_data$time, heart_data$DEATH_EVENT)
+plot (time ~ DEATH_EVENT, data = heart_data)
+fligner.test(time ~ DEATH_EVENT, data = heart_data)
+```
+
+En l'anàlisis visual de la variable `time`, no s'observa similitud de les variances. Desprès d'aplicar el test observem que és compleix la condició 0.00818 < 0.05 i per tant es refusa $H_0$, és a dir, es compleix el principi de NO Homocedasticitat.
+
 
 ## Aplicació de proves estadístiques per comparar els grups de dades. 
 
-### Contrast hipòtesis
-
-<!--Completar-->
-
 ### Correlacions
 
-Per veure quins conjunts de variables estan relacionats entre si, farem servir l'anàlisi multivariant.
+Per veure les correlacions entre les diferents dimensions farem ús d'un *"scatter plot matrix"*, el qual ens proporcionarà una visualització de cada dimensió amb la resta.  
 
+A la part superior veurem l'scatter plot de les 2 variables avaluades i a la part inferior el valor del seu coeficient de correlació. Per obtenir aquest valor podíem optar entre el coeficient de correlació de Pearson i el coeficient de correlació de Spearman. Però l'elecció està condicionada als resultats de les proves realitzades prèviament i com ja hem vist cap de les variables numèriques segueix una distribució Normal i tampoc quasi cap d'elles compleix el principi d'homoscedasticitat i per tant haurem d'utilitzar el 2º coeficient, el coeficient de Spearman.
+
+Veient les gràfiques superiors intuïm que pràcticament no existeix correlació entre cap parell de variables del nostre joc de dades, ho podem contrastar mirant a la part inferior i observant que quasi la majoria de valors obtinguts es mouen al voltant del valor 0 indicant l'absència de correlació. Si observem la correlació entre les variables i fem grups:  
+
+* Variables que tenen a veure amb la sang (`creatinine_phosphokinase`, `ejection_fraction`, `platelets`, `serum_creatinine`, `serum_sodium`).  
+* Variables que no tenen a veure amb la sang (`age` i `time`).  
+
+Veurem a priori que no existeix cap correlació entre `age` i `time` i la resta de variables, així com tampoc entre elles mateixes.  
+
+```{r message= FALSE, warning=FALSE}
+#Configuració del panel inferior
+lower.panel <- function(x, y){
+    par(usr = c(0, 1, 0, 1))        #Coord. de la regió de dibuix
+    #Càlcul de la correlació
+    r <- round(cor(x,y,use="complete.obs", method="spearman"), digits=2)
+    txt <- paste0("R = ", r)        #txt -> R = valor correlació
+    cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor)  #Dibuixem el valor de la correlació als gràfics
+}
+#Configuració del panel superior
+#Indiquem l'aspecte dels punts que es dibuixaran en el panel
+# pch = 19 -> solid circle
+# col -> els colors que volem donar als punts
+upper.panel<-function(x, y){
+  points(x,y, pch = 19, col=c("red", "green"))
+}
+#Dibuixem els plots per visualitzar la correlació entre les varibles numèriques.
+pairs(~ age + creatinine_phosphokinase + ejection_fraction + platelets + 
+        serum_creatinine + serum_sodium + time, data = heart_data, 
+      lower.panel = lower.panel,               #Configuració del panell inferior
+      upper.panel = upper.panel)             #Configuració del panell superior
+```
+
+Per un moment es podria pensar que les dades relacionades amb la sang hauríen de tenir certa relació amb l'edat i que per tant els valors d'aquestes variables hauríen d'estar relacionats. Amb aquest idea a la ment el que farem serà dur a terme un test de correlació entre la dimensió `age` i la resta, així com entre la dimensió `time` i la resta i finalment entre elles.  
+
+La hipòtesi nul·la en un "correlation test" afirma que la correlació té un valor de 0, o sigui que NO existeix relació entre les 2 variables avaluades. Per tant si:  
+
+  * El p-value és inferior a un nivell de significància de $\alpha = 0.05$ refusarem la hipòtesi nul·la.  
+  * En cas contrari NO la refusarem.  
+  
+Ara farem 2 grups de variables numèriques i confirmarem si realment existeix o no correlació entre les dimensions del 1º grup i les del 2º grup:  
+
+  * Les que no aporten dades d'elements sanguinis, `age` i `time`.  
+  * Les que si aporten dades, `creatinine_phosphokinase`, `ejection_fraction`, `platelets`, `serum_creatinine`, `serum_sodium`  
+
+
+```{r message= FALSE, warning=FALSE}
+
+cor.Age.Creat <- cor.test(formula = ~ age + creatinine_phosphokinase, data = heart_data,
+                          method="spearman", exact = FALSE)
+cor.Age.Eject <- cor.test(heart_data$age,heart_data$ejection_fraction,
+                          method="spearman", exact = FALSE)
+cor.Age.Plat <- cor.test(heart_data$age,heart_data$platelets
+                         ,method="spearman", exact = FALSE)
+cor.Age.SerumCreat <- cor.test(heart_data$age,heart_data$serum_creatinine,
+                               method="spearman", exact = FALSE)
+cor.Age.SerumSod <- cor.test(heart_data$age,heart_data$serum_sodium,
+                             method="spearman", exact = FALSE)
+cor.Age.Time <- cor.test(heart_data$age,heart_data$time,
+                         method="spearman", exact = FALSE)
+cor.Time.Creat <- cor.test(formula = ~ time + creatinine_phosphokinase, data = heart_data,
+                           method="spearman", exact = FALSE)
+cor.Time.Eject <- cor.test(heart_data$time,heart_data$ejection_fraction,
+                           method="spearman", exact = FALSE)
+cor.Time.Plat <- cor.test(heart_data$time,heart_data$platelets,
+                          method="spearman", exact = FALSE)
+cor.Time.SerumCreat <- cor.test(heart_data$time,heart_data$serum_creatinine,
+                                method="spearman", exact = FALSE)
+cor.Time.SerumSod <- cor.test(heart_data$time,heart_data$serum_sodium,
+                              method="spearman", exact = FALSE)
+
+print(paste("Test Correlacio Age ~ Creatinine_Phosphokinase: ", cor.Age.Creat$p.value))
+print(paste("Test Correlacio Age ~ Ejection_Fraction: ", cor.Age.Eject$p.value))
+print(paste("Test Correlacio Age ~ Platelets: ", cor.Age.Plat$p.value))
+print(paste("Test Correlacio Age ~ Serum_Creatinine: ", cor.Age.SerumCreat$p.value))
+print(paste("Test Correlacio Age ~ Serum_Sodium: ", cor.Age.SerumSod$p.value))
+print(paste("Test Correlacio Age ~ Time: ", cor.Age.Time$p.value))
+print(paste("Test Correlacio Time ~ Creatinine_Phosphokinase: ", cor.Time.Creat$p.value))
+print(paste("Test Correlacio Time ~ Ejection_Fraction: ", cor.Time.Eject$p.value))
+print(paste("Test Correlacio Time ~ Platelets: ", cor.Time.Plat$p.value))
+print(paste("Test Correlacio Time ~ Serum_Creatinine: ", cor.Time.SerumCreat$p.value))
+print(paste("Test Correlacio Time ~ Serum_Sodium: ", cor.Time.SerumSod$p.value))
+```
+
+
+Desprès d'aplicar el test podem observar com l'idea inicial que teníem no anava mal enfocada i si que existeixen algunes variables que tenen una petita correlació entre elles:  
+  
+  * `age` versus `serum_creatinine` amb una molt lleu correlació positiva.  
+  * `age` versus `time` amb una molt lleu correlació negativa.  
+  * `time` versus `creatinine_phosphokinase` amb una molt lleu correlació positiva.  
+  * `time` versus `serum_creatinine` amb una molt lleu correlació negativa.  
+
+El fet de haver detectat que existeixen correlacions entre diferents variables ens permetrà poder utilitzar la regressió lineal entre aquestes.  
+
+
+A continuació mostrem una taula de freqüències absolutes on observem la quantitat d'observacions de cada dimensió que pertanyen a la classe "Si" o "No" de la dimensió `death_event`.
+D'entrada una dada que ens fa preguntar-nos alguna qüestió és que la quantitat d'objectes que tenen un valor "No" a la dimensió `smoking` és la mateixa que la quantitar de pacients que finalment no moren i el mateix passa amb els que tenen un valor "Si". Aquest fet no vol dir que els objectes siguin els mateixos, per veure aquesta dada haurem de fer una taula de freqüencies relatives entre les 2 variables que es podrà apreciar a continuació.
+
+```{r message= FALSE, warning=FALSE}
+#Taula de frequències per la dimensió [Death_Event]
+t1 <- table(heart_data$DEATH_EVENT)
+t1 <- as.matrix(t1)
+
+colnames(t1)[1] <- "Class"
+t1 <- cbind(t1,Dim_Anaemia=c(table(heart_data$anaemia)[1],table(heart_data$anaemia)[2]))
+t1 <- cbind(t1,Dim_Diabetes=c(table(heart_data$diabetes)[1],table(heart_data$diabetes)[2]))
+t1 <- cbind(t1,Dim_Pressure=c(table(heart_data$high_blood_pressure)[1],
+                              table(heart_data$high_blood_pressure)[2]))
+t1 <- cbind(t1,Dim_Sex=c(table(heart_data$sex)[1],table(heart_data$sex)[2]))
+t1 <- cbind(t1,Dim_Smoking=c(table(heart_data$smoking)[1],table(heart_data$smoking)[2]))
+addmargins(t1)
+```
+
+Ara podem veure la quantitat d'objectes agrupats en funció del valor dels seus atributs, a les columnes hi trobarem les dades de l'última dimensió en aquest cas `smoking`. A les files hi trobarem les dimensions indicades a la funció d'esquerra a dreta sense tenir en compte l'última.  
+Per exemple si ens fixem en el valor:  
+
+* **[26]** sabem que Si fumava, NO tenia la pressió alta, NO tenia diabetes, NO tenia anemia, NO va morir.  
+* **[5]** sabem que SI fumava, SI tenia la pressió alta, SI tenia diabets, NO tenia anemia i SI va morir 
+
+```{r message= FALSE, warning=FALSE}
+ftable(heart_data$DEATH_EVENT,heart_data$anaemia,heart_data$diabetes,
+       heart_data$high_blood_pressure,heart_data$smoking)
+```
+
+
+Taula de freqüències relatives i absolutes entre les dimensions `death_event` i `aenemia`
+
+```{r message= FALSE, warning=FALSE}
+#Taula de frequències absolutes deathEvent - anaemia
+t1 <- table(heart_data$DEATH_EVENT,heart_data$anaemia)
+addmargins(t1)
+#Taula de frequències relatives sobre el total de la mostra
+prop.table(t1, margin=NULL) * 100
+```
+
+Taula de freqüències relatives i absolutes entre les dimensions `death_event` i `diabetes`
+
+```{r message= FALSE, warning=FALSE}
+#Taula frequències absolutes [death_Event] - [diabetes]
+t1 <- table(heart_data$DEATH_EVENT,heart_data$diabetes)
+addmargins(t1)
+#Taula de frequències relatives sobre el total de la mostra.
+prop.table(t1, margin=NULL) * 100
+
+```
+
+Taula de freqüències relatives i absolutes entre les dimensions `death_event` i `high_blood_pressure`
+
+```{r message= FALSE, warning=FALSE}
+#Taula frequències absolutes [death_Event] - [high_bood_pressure]
+t1 <- table(heart_data$DEATH_EVENT,heart_data$high_blood_pressure)
+addmargins(t1)
+#Taula de frequències relatives sobre el total de la mostra
+prop.table(t1, margin=NULL) * 100
+
+```
+
+Taula de freqüències relatives i absolutes entre les dimensions `death_event` i `sex`
+
+```{r message= FALSE, warning=FALSE}
+#Taula frequències absolutes [death_Event] - [sex]
+t1 <- table(heart_data$DEATH_EVENT,heart_data$sex)
+addmargins(t1)
+#Taula de frequències relatives sobre el total de la mostra
+prop.table(t1, margin=NULL) * 100
+```
+
+Taula de freqüències relatives i absolutes entre les dimensions `death_event` i `smoking`
+
+```{r message= FALSE, warning=FALSE}
+#Taula frequències absolutes [death_Event] - [smoking]
+t1 <- table(heart_data$DEATH_EVENT,heart_data$smoking)
+addmargins(t1)
+#Taula de frequències relatives sobre el total de la mostra
+prop.table(t1, margin=NULL) * 100
+```
+
+Un cop ja hem creat taules de contingències entre cadascuna de les variables i la variable *class* ja estem preparats per esbrinar si aquestes són o no independents respecte de la variable *class*. Per aconseguir-ho utilitzarem el test Chi-Quadrat.
+
+L'hipòtesi nul·la d'aquest test és que les 2 variables són independents
+
+```{r message= FALSE, warning=FALSE}
+#Test Chi-Squared entre cadascuna de les variables i la variable class
+chi1 <- chisq.test(heart_data$DEATH_EVENT,heart_data$anaemia)
+chi2 <- chisq.test(heart_data$DEATH_EVENT,heart_data$diabetes)
+chi3 <- chisq.test(heart_data$DEATH_EVENT,heart_data$high_blood_pressure)
+chi4 <- chisq.test(heart_data$DEATH_EVENT,heart_data$smoking)
+t <- c(chi1$p.value, chi2$p.value, chi3$p.value, chi4$p.value)
+#Es crea una matriu de 4 files x 1 columna
+matriXsquared <- matrix(t,nrow=4,ncol=1)
+#Donem nom a la columna
+colnames(matriXsquared)[1] <- "P-Value"
+#Afegim la columna "Xsquared" a la matriu prèviament creada
+matriXsquared <- cbind(matriXsquared,Xsquared=c(chi1$statistic, chi2$statistic, 
+                                                chi2$statistic, chi2$statistic))
+#Donem nom a les diferents files
+rownames(matriXsquared) <- c("Death_Event - Anaemia","Death_Event - Diabetes",
+                             "Death_Event - Pressure","Death_Event - Smoking")
+matriXsquared
+```
+
+Seguint el principi de refutació indicat prèviament i observant aquesta taula podem dir que tots els valors *p-value* mostrats són més grans que el nivell de significança i que per tant es compleix la hipòtesi nul·la o sigui aquestes variables respecte a la dimensió de la classe són independents.
+
+A continuació utilitzarem un altre mètode per veure la correlació de les variables, ho farem mitjançant una anàlisi multivariant i observarem si obtenim els mateixos resultats que amb l'anàlisi anterior.
 
 ```{r message= FALSE, warning=FALSE}
 library(reshape2)
@@ -449,7 +941,7 @@ qplot(x=Var1, y=Var2, data=melt(cor(heat, use="p")), fill=value, geom="tile") +
    coord_fixed()
 ```
 
-Com més intentistat de color, vol dir que més correlacionades estan les variables. Observem que les variables que tenen una correlació més alta són: 
+Com més intentistat de color, vol dir que més correlacionades estan les variables. Observem amb l'anàlisi multivariant, les variables que tenen una correlació més alta són: 
 
 * serum_sodium - platelets
 * time - age
@@ -467,66 +959,242 @@ heatmap(trainscaled, Colv=F, scale='none')
 Podem observar en vermell més fort les variables que tenen més relació i com es van agrupant en un *clustering jeràrquic*.
 
 
+### Contrast hipòtesis
+
+La segona prova que realitzarem serà un contrast d'hipòtesi sobre 2 mostres per poder determinar si el nivell de `creatinine_phosphokinase` és major amb els pacients que acaben morint o no.  Aprofitarem i també ho farem amb la dimensió `platelets`.
+
+Com la distribució de les dades d'aquestes dimensions no segueixen una Normal utilitzarem el test de *Mann–Whitney–Wilcoxon (WMW)*, també conegut com *Wilcoxon rank-sum test* o *u-test*. Referent en aquest test hem de donar constància d'alguns fets:  
+
+* Tenim poques observacions a les mostres.  
+* No tenim un total coneixement de les poblacions d'on s'han extret aquestes dades.  
+
+A continuació definirem les hipòtesis nul·la i alternativa: 
+
+Hipòtesis nul·la $(H_0): \mu_1 = \mu_2$ 
+
+Hipòtesis alternativa $(H_1): \mu_1 \ne \mu_2$  
+
+Aquest és un test no paràmetric que contrasta si dues mostres procedeixen de 2 poblacions equidistribuides i que necesita d'uns mínims per a donar un resultat vàlid:  
+
+* Les dades han de ser independents.  
+* Les dades s'han de poder ordenar de més gran a més petit.  
+* Les dades de les mostres no han de seguir necessàriament una Normal.  
+* Les mostres han de complir amb el principi de Homocedasticitat i per comprovar-ho utilitzarem el test de *Fligner-Killen*.  
+  
+**Comparació entre les mostres `Death_Event="Si" ~ Creatinine_Phosphokinase` i `Death_Event="No" ~ Creatinine_Phosphoskinase`:**  
+
+```{r message= FALSE, warning=FALSE}
+heart_data.SiDeath.CreatPhos <- heart_data[DEATH_EVENT == "Si",]$creatinine_phosphokinase
+heart_data.NoDeath.CreatPhos <- heart_data[DEATH_EVENT == "No",]$creatinine_phosphokinase
+#Ttest Fligner-Killen per validar si les variances de les 2 mostres són iguals o no
+fligner.test(x = list(heart_data.SiDeath.CreatPhos,heart_data.NoDeath.CreatPhos))
+#Test "Mann-Whitney-Wilcoxon.
+resp1 <- wilcox.test(heart_data.SiDeath.CreatPhos, heart_data.NoDeath.CreatPhos, 
+                     mu = 0, paired = FALSE, conf.int = 0.95, alernative="great")
+resp1
+```
+
+* El test *Fligner-Killen* ha retornat un p-value = 0.6044, o sigui major que el nivell de significància 0.05 i per tant complim el principi indicat prèviament per que les 2 variances són homogenies.  
+* El test *Mann–Whitney–Wilcoxon* ha retornat un p-value = 0.6585, o sigui major que el nivell de significància 0.05 i per tant hi trobem suficients evidències per poder dir que els membres de la 1º mostra tenen una major probabilitat d'estar per sobre dels de la 2ª mostra.  
+
+Amb això en ment si que podem concloure que els pacients que finalment han mort tenien un nivell de `creatinine_phosphokinase` més alt que els que NO han mort.
+
+**Comparació entre les mostres `Death_Event="Si" ~ Platelets` i `Death_Event="No" ~ Platelets`**
+
+ 
+
+
+```{r}
+heart_data.SiDeath.SerumCreat <- heart_data[DEATH_EVENT == "Si", ]$platelets
+heart_data.NoDeath.SerumCreat <- heart_data[DEATH_EVENT == "No", ]$platelets
+fligner.test(x = list(heart_data.SiDeath.SerumCreat,heart_data.NoDeath.SerumCreat))
+resp2 <- wilcox.test(heart_data.SiDeath.SerumCreat, heart_data.NoDeath.SerumCreat, 
+                     mu = 0, paired = FALSE, conf.int = 0.95, alternative = "great")
+resp2
+```
+
+* El test *Fligner-Killen* ha retornat un p-value = 0.1275, major que el nivell de significança 0.05 i per tant complim el principi indicat prèviament perquè les 2 variances són homogenies.  
+* El test *Mann–Whitney–Wilcoxon* ha retornat un p-value = 0.7876, o sigui major que el nivell de significànça 0.05 i per tant hi trobem suficients evidències per poder dir que els membres de la primera mostra ($\mu_1$) tenen una major probabilitat d'estar per sobre dels de la segona mostra ($\mu_2$).  
+
+Podem concloure que els pacients que finalment han mort tenien un nivell de `platelets` més alt que els que NO han mort.
+
 ### Regressió
 
-<!--Completar-->
+Quan tenim un model on s'avalua la influència de tot un conjunt de variables sobre una variable resposta i la variables és dicotòmica, ens trobem davant d'un model de regressió logística.
 
+Observant el nostre joc de dades veiem clarament que compleix aquests requisits i per tant passarem a crear el model.  
+
+Com hem pogut veure en analitzar les variables numèriques no totes estan en la mateixa unitat de mesura, els diferents rangs que hi trobem a les dimensions són:
+
+  * `age` -> [40,95]  
+  * `creatinine_phosphokinase` -> [23,7861]  
+  * `ejection_fraction` -> [14,80]  
+  * `platelets` -> [25100,850000]  
+  * `serum_creatinine` -> [0.5,9.4]  
+  * `serum_sodium` -> [113,148]  
+  * `time` -> [4,285]  
+
+Per tant a l'hora d'obtenir quina proporció del resultat final aporta cada variable necessitarem estandaritzar-les.
+
+Per aconseguir-ho utilitzarem *"Min-Max Normalization"*, els càlculs de la qual es troben dins de la funció *"normalize()"*. Un cop apliquem aquesta funció sobre les observacions d'una variable aconseguirem que totes les observacions pertanyin al rang [0,1].
+
+```{r message= FALSE, warning=FALSE}
+normalize <- function(x) {
+  return((x- min(x)) / (max(x)-min(x)))
+}
+heart_data[,"age"] <- as.numeric(normalize(heart_data[,"age"]))
+heart_data[,"creatinine_phosphokinase"] <- as.numeric(normalize(
+  heart_data[,"creatinine_phosphokinase"]))
+heart_data[,"ejection_fraction"] <- as.numeric(
+  normalize(heart_data[,"ejection_fraction"]))
+heart_data[,"platelets"] <- as.numeric(normalize(heart_data[,"platelets"]))
+heart_data[,"serum_creatinine"] <- as.numeric(
+  normalize(heart_data[,"serum_creatinine"]))
+heart_data[,"serum_sodium"] <- as.numeric(normalize(heart_data[,"serum_sodium"]))
+heart_data[,"time"] <- as.numeric(normalize(heart_data[,"time"]))
+```
+
+Fem un model només amb les variables categòriques:
+
+```{r message= FALSE, warning=FALSE}
+if (!require(ISLR)) {install.packages("ISLR")}
+
+#Model variables categòriques.
+glm.fitToM1 <- glm(DEATH_EVENT ~ anaemia + diabetes + smoking + high_blood_pressure, 
+                   data = heart_data, family = binomial)
+#Obtenim el valor estimat, l'error standard, el z-score i el p-value dels coeficients.
+summary(glm.fitToM1)
+#Obtenim els predictors
+glm.probsToM1 <- predict(glm.fitToM1,type = "response")
+#Desprès de varies proves observem que el valor del predictor més gran és 0.4067315
+glm.probsToM1[ which(glm.probsToM1[] > 0.4067)  ]
+```
+
+Un cop arribats aquí veiem que la probabilitat màxima que ens ofereixen els predictors d'aquest model és de 40.67%.
+
+
+Ara fem un model amb les variables numèriques:
+
+```{r message= FALSE, warning=FALSE}
+#Fem un model només amb les variables numèriques.
+glm.fitToM2 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium + time, data = heart_data, family = binomial)
+#Obtenim el valor estimat, l'error standard, el z-score i el p-value dels coeficients.
+summary(glm.fitToM2)
+
+#Obtenim els predictors
+glm.probsToM2 <- predict(glm.fitToM2,type = "response")
+#Obtenim els predictors que ens donen una probabilitat per sobre del 98%
+glm.probsToM2[ which(glm.probsToM2[] > 0.98)  ]
+```
+
+Un cop arribats aquí veiem que la probabilitat màxima que ens ofereixen els predictors d'aquest model és de 99.95%.
+
+Ara fem un model amb totes les variables (numèriques i categòriques):
+
+```{r message= FALSE, warning=FALSE}
+
+attach(heart_data)
+#Fem un model amb totes les variables
+glm.fitToM3 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium + time + anaemia + diabetes + smoking + high_blood_pressure, data = heart_data, family = binomial)
+#Obtenim el valor estimat, l'error standard, el z-score i el p-value de cadascun dels coeficients.
+summary(glm.fitToM3)
+#Obtenim els predictors, com la nostre variable resposta és dicotómica ho indiquem amb el paràmetre [type="response"]
+glm.probsToM3 <- predict(glm.fitToM3,type = "response")
+#Obtenim els predictors que ens donen una probabilitat per sobre del 98%
+glm.probsToM3[ which(glm.probsToM3[] > 0.98)  ]
+```
+
+Un cop arribats aquí veiem que la probabilitat màxima que ens ofereixen els predictors d'aquest model és de 99.94%.  
+
+Un cop vist que els models 2 i 3 tenen pràcticament la mateixa eficiència, desestimarem el model 1 que només utilitzava variables categòriques com a variables independents.  
+
+Ara passarem a fer una predicció per veure si el pacient acaba morint o No en funció de les variables independents utilitzades.  
+
+Es crea un vector de valors "Si" i "No" en funció de si les probabilitats dels predictors del vector [predToM2] estan o no per sobre del valor 99'95%.
+
+Es crea una taula de contingencia entre el nou vector creat i la dimensió de classe del nostre dataset per saber quantes coincidències hi trobem, hem de pensar que l'éxit es troba en les dades que es troben a la diagonal.  
+
+Finalment calculem la "mean" i observem que el nostre model ens ofereix un 68'22% de fiabilitat.
+
+```{r message= FALSE, warning=FALSE}
+glm.predToM2 <- ifelse(glm.probsToM2 > 0.9995, "Si", "No")
+addmargins(table(glm.predToM2,heart_data$DEATH_EVENT))
+mean(glm.predToM2 == heart_data$DEATH_EVENT)
+```
+
+Apliquem el mateix que hem dit prèviament i obtenim una fiabilitat del 68'22%.
+
+```{r message= FALSE, warning=FALSE}
+glm.predToM3 <- ifelse(glm.probsToM3 > 0.9994, "Si", "No")
+addmargins(table(glm.predToM3,heart_data$DEATH_EVENT))
+mean(glm.predToM3 == heart_data$DEATH_EVENT)
+```
+
+
+```{r message= FALSE, warning=FALSE}
+newData1 <- data.frame(age = 0.63636364, anaemia = "Si", creatinine_phosphokinase = 0.071319214, diabetes = "Si", ejection_fraction = 0.09090909, high_blood_pressure = "Si", platelets = 0.29082313, serum_creatinine = 0.15730337, serum_sodium = 0.48571429, sex = "femeni", smoking = "Si", time = 0.000000000)
+predict(glm.fitToM3, newData1)
+glm.fitToM5 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium + time + anaemia + diabetes + smoking + high_blood_pressure, data = heart_data, family = binomial)
+glm.probsToM5 <- predict(glm.fitToM5, newData1, type = "response")
+glm.probsToM5[ which(glm.probsToM5[] > 0.98)  ]
+glm.predToM5 <- ifelse(glm.probsToM5 > 0.98, "Si", "No")
+addmargins(table(glm.predToM5,heart_data[15,"DEATH_EVENT"]))
+mean(glm.predToM5 == heart_data[15,"DEATH_EVENT"])
+```
+
+Hem pogut apreciar que el model que utilitza només variables numèriques ofereix la mateixa fiabilitat que el model que utilitza totes les variables i per tant per fer la predicció d'un nou objecte o sigui d'un nou pacient utiltizarem el model3 així farem ús de totes les variables independents. 
+
+Per validar el comportament del model3 ens inventarem les dades d'un pacient i farem que el model realitzi una predicció, que serà comparada posteriorment amb un valor "No" de la dimensió class. Com podem apreciar a la taula de contingencia la predicció ens dona un "Si", pero com ho hem comparat amb un valor "No" la proporció d'encert ha estat 0. Hem de dir a més que hem fet la prova amb dades de pacients que es troben dins del dataframe i el resultat predit ha estat el correcte.
+
+<!--
 \newpage
 # Representació dels resultats a partir de taules i gràfiques.
 
-<!--Completar-->
+Hem anat observant els resultats amb taules i gràfiques al llarg de tot l'ànalisi.
+-->
 
 \newpage
 # Resolució del problema. 
 
+Al llarg d'aquest treball s'han realitzat diferents tractaments de les dades amb l'objectiu d'aconseguir respondre algunes preguntes i a més poder obtenir un model que sigui capaç de fer prediccions amb una alta fiabilitat.  
 
+Hem començat analitzant les dades per observar els seus tipus i si hi havia *missing values* i *outliers*. Pel que fa als primers hem vist que aquest joc de dades no en tenia cap, però respecte als segons sí que n'hem trobat. El fet de no tenir *missing values* ens ha donat confiança respecte a la possibilitat de NO tenir dades amb errades en el joc de dades i hem decidit acceptar aquestes dades tal com estan.
 
+Hem pogut apreciar l'existència o NO de correlacions entre les diferents variables, tant numèriques com categòriques, per saber com unes podien o no tenir influència en les altres. Quant a les categòriques s'ha demostrat que no existia cap relació entre elles respecte a la dimensió de la classe i sobre les numèriques hem pogut apreciar alguna petita relació entre unes poques variables.
 
+El test d'hipòtesi ens ha permès saber la influència d'algunes variables, com `creatinine_phosphokinase` i `platelets` sobre el fet que el pacient acabi morint o NO. En ambdós casos hem vist com realment els valors d'aquests elements sanguinis eren majors en els pacients que finalment morien.
 
-
-
-
-
-<!--==================================================-->
-
-## Discretització 
-
-Veient les diferents variables que tenim, crec que només té sentit discretitzar la variable *ejection_fraction*, realitzarem una discretització on separarem cada 20%, és a dir 0-20%, 20-40%, 40-60%, 60-80% i 80-100%. I mirarem com varia la distribució de les dades.
-
-```{r message= FALSE, warning=FALSE}
-#Discretitzem ejection_fraction
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction < 20] <- "0-20%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 20 & 
-                                     heart_data$ejection_fraction < 40] <- "20-40%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 40 & 
-                                     heart_data$ejection_fraction < 60] <- "40-60%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 60 & 
-                                     heart_data$ejection_fraction < 80] <- "60-80%"
-heart_data$ejection_fraction_discr[heart_data$ejection_fraction >= 80] <- "80-100%"
-```
-
-Normalment eliminariem la columna discretitzada però en aquest cas la mantindrem perquè en funció del modelatge que volguem realitzar en un futur, podriem necessitar la variable en format numèric. 
-
-```{r message= FALSE, warning=FALSE}
-head(heart_data)
-plot(as.factor(heart_data$ejection_fraction_discr))
-```
+Finalment cal dir que per a poder realitzar alguns dels objectius citats anteriorment hem hagut de sotmetre a les diferents variables a proves de Normalitat i d'Homocedasticitat, per poder aconseguir el màxim de confiança en els resultats generats.
 
 
 
 
 \newpage
-# Referències
+# Referències  
 
+R MarkDown. https://bookdown.org/yihui/rmarkdown/
 
+Correlation Test. http://www.sthda.com/english/wiki/correlation-test-between-two-variables-in-r
 
+AprendeR. https://aprender-uib.github.io/AprendeR2/
 
+Homoscedasticitat. https://www.cienciadedatos.net/documentos/9_homogeneidad_de_varianza_homocedasticidad.html
 
+Handbook R. https://rcompanion.org/handbook/index.html
 
+The Pirates Guide of R. https://bookdown.org/ndphillips/YaRrr/
 
+Test Significance Correlation Coefficient.  https://courses.lumenlearning.com/introstats1/chapter/testing-the-significance-of-the-correlation-coefficient/  
 
+Overview Categorical - Continuous. https://medium.com/@outside2SDs/an-overview-of-correlation-measures-between-categorical-and-continuous-variables-4c7f85610365
 
+Contingency Tables. https://www.datacamp.com/community/tutorials/contingency-tables-r
 
+Contingency analysis https://www.datacamp.com/community/tutorials/contingency-analysis-r
 
+Analisis Correlació. https://www.maximaformacion.es/blog-dat/analisis-de-correlacion-en-r/
 
+Chi-Square. http://www.sthda.com/english/wiki/chi-square-test-of-independence-in-r
+
+Normalization. https://www.datanovia.com/en/blog/how-to-normalize-and-standardize-data-in-r-for-great-heatmap-visualization/
 
