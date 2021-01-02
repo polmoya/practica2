@@ -1159,12 +1159,14 @@ Hem pogut apreciar que el model que utilitza només variables numèriques oferei
 
 Per validar el comportament del model3 ens inventarem les dades d'un pacient i farem que el model realitzi una predicció, que serà comparada posteriorment amb un valor "No" de la dimensió class. Com podem apreciar a la taula de contingencia la predicció ens dona un "Si", pero com ho hem comparat amb un valor "No" la proporció d'encert ha estat 0. Hem de dir a més que hem fet la prova amb dades de pacients que es troben dins del dataframe i el resultat predit ha estat el correcte.
 
-<!--
-\newpage
-# Representació dels resultats a partir de taules i gràfiques.
+### Escriptura de les dades
 
-Hem anat observant els resultats amb taules i gràfiques al llarg de tot l'ànalisi.
--->
+Finalment s'escriuran les dades finals analitzades en un nou csv.
+
+```{r message= FALSE, warning=FALSE}
+write.csv(heart_data, "./heart_failure_clinical_records_dataset_clean.csv")
+```
+
 
 \newpage
 # Resolució del problema. 
