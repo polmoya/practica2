@@ -1077,7 +1077,9 @@ Ara fem un model amb les variables numèriques:
 
 ```{r message= FALSE, warning=FALSE}
 #Fem un model només amb les variables numèriques.
-glm.fitToM2 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium + time, data = heart_data, family = binomial)
+glm.fitToM2 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + 
+                     platelets + serum_creatinine + serum_sodium + time, 
+                   data = heart_data, family = binomial)
 #Obtenim el valor estimat, l'error standard, el z-score i el p-value dels coeficients.
 summary(glm.fitToM2)
 
@@ -1095,10 +1097,13 @@ Ara fem un model amb totes les variables (numèriques i categòriques):
 
 attach(heart_data)
 #Fem un model amb totes les variables
-glm.fitToM3 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium + time + anaemia + diabetes + smoking + high_blood_pressure, data = heart_data, family = binomial)
-#Obtenim el valor estimat, l'error standard, el z-score i el p-value de cadascun dels coeficients.
+glm.fitToM3 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + 
+                     platelets + serum_creatinine + serum_sodium + time + anaemia + 
+                     diabetes + smoking + high_blood_pressure, data = heart_data, 
+                   family = binomial)
+#Obtenim el valor estimat, l'error standard, el z-score i el p-value dels coeficients.
 summary(glm.fitToM3)
-#Obtenim els predictors, com la nostre variable resposta és dicotómica ho indiquem amb el paràmetre [type="response"]
+#Obtenim els predictors
 glm.probsToM3 <- predict(glm.fitToM3,type = "response")
 #Obtenim els predictors que ens donen una probabilitat per sobre del 98%
 glm.probsToM3[ which(glm.probsToM3[] > 0.98)  ]
@@ -1132,9 +1137,17 @@ mean(glm.predToM3 == heart_data$DEATH_EVENT)
 
 
 ```{r message= FALSE, warning=FALSE}
-newData1 <- data.frame(age = 0.63636364, anaemia = "Si", creatinine_phosphokinase = 0.071319214, diabetes = "Si", ejection_fraction = 0.09090909, high_blood_pressure = "Si", platelets = 0.29082313, serum_creatinine = 0.15730337, serum_sodium = 0.48571429, sex = "femeni", smoking = "Si", time = 0.000000000)
+newData1 <- data.frame(age = 0.63636364, anaemia = "Si", 
+                       creatinine_phosphokinase = 0.071319214, 
+                       diabetes = "Si", ejection_fraction = 0.09090909, 
+                       high_blood_pressure = "Si", platelets = 0.29082313, 
+                       serum_creatinine = 0.15730337, serum_sodium = 0.48571429, 
+                       sex = "femeni", smoking = "Si", time = 0.000000000)
 predict(glm.fitToM3, newData1)
-glm.fitToM5 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + platelets + serum_creatinine + serum_sodium + time + anaemia + diabetes + smoking + high_blood_pressure, data = heart_data, family = binomial)
+glm.fitToM5 <- glm(DEATH_EVENT ~ age + creatinine_phosphokinase + ejection_fraction + 
+                     platelets + serum_creatinine + serum_sodium + time + anaemia + 
+                     diabetes + smoking + high_blood_pressure, 
+                   data = heart_data, family = binomial)
 glm.probsToM5 <- predict(glm.fitToM5, newData1, type = "response")
 glm.probsToM5[ which(glm.probsToM5[] > 0.98)  ]
 glm.predToM5 <- ifelse(glm.probsToM5 > 0.98, "Si", "No")
