@@ -1179,8 +1179,15 @@ El test d'hipòtesi ens ha permès saber la influència d'algunes variables, com
 
 Finalment cal dir que per a poder realitzar alguns dels objectius citats anteriorment hem hagut de sotmetre a les diferents variables a proves de Normalitat i d'Homocedasticitat, per poder aconseguir el màxim de confiança en els resultats generats.
 
+\newpage
+# Taula contribucions
 
-
+Contribucions               Firma       
+-------------------------   ------------------------------------   
+Investigació prèvia         Pol Moya Betriu, Xavier Martín Bravo               
+Redacció de les respostes   Pol Moya Betriu, Xavier Martín Bravo             
+Desenvolupament codi        Pol Moya Betriu, Xavier Martín Bravo     
+---------  --------------   ----------------
 
 \newpage
 # Referències  
