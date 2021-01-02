@@ -6,6 +6,7 @@
 Els arxius que composen el projecte són 4:
 
 * heart_failure_clinical_records_dataset.csv: Dataset amb les dades a tractar.
+* heart_failure_clinical_records_dataset_clean.csv: Dataset amb les dades a tractades i analitzades.
 * practica2.pdf: Conté la documentació de la pràctica.
 * practica2.rmd: Conté el codi de la pràctica.
 * scholar.bib: Conté les referències de la pràctica.
